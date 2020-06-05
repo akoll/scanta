@@ -27,25 +27,28 @@ Storage{TStorage}
 struct EntityComponentSystem {
 
   template<typename... TSystems>
-  class Runtime {
+  class SequentialRuntime {
   public:
     // Systems are passed as lvalue-references and stored as referece_wrapper.
-    Runtime(TSystems&... systems): _systems(std::make_tuple(std::reference_wrapper(systems)...)) {};
+    SequentialRuntime(TSystems&... systems): _systems(std::make_tuple(std::reference_wrapper(systems)...)) {};
 
     // Runs each system once.
     void operator()() {
       hana::for_each(_systems, [this](auto& system) {
-        auto args = hana::transform(get_argtypes(system), [this](auto argtype) {
-          return hana::eval_if(hana::find(component_types, hana::traits::decay(argtype)) != hana::nothing,
+        auto args = hana::transform(hana::transform(get_argtypes(system), hana::traits::decay), [this](auto argtype) {
+          using ArgType = typename decltype(argtype)::type;
+          return hana::eval_if(hana::find(component_types, argtype) != hana::nothing,
+            // The argument type is a stored component type:
             [&](auto _) {
-              static_assert(argtype != hana::type_c<TestSystem>);
-              using ComponentType = typename decltype(hana::traits::decay(_(argtype)))::type;
               // reference_wrapper is needed to store the reference in the args container (to later be unpacked into the system call).
-              return std::reference_wrapper(_storage.template getComponent<ComponentType>(0));
+              return std::reference_wrapper(_storage.template getComponent<ArgType>(0));
             },
             [&](auto _) {
-              using SystemType = typename decltype(hana::traits::decay(_(argtype)))::type;
-              return std::get<std::reference_wrapper<SystemType>>(_(_systems));
+              return hana::eval_if(hana::find(system_types, argtype) != hana::nothing,
+                // The argument type is a stored system type:
+                [&](auto _) { return std::get<std::reference_wrapper<ArgType>>(_systems); },
+                [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
+              );
             }
           );
         });
@@ -67,7 +70,7 @@ struct EntityComponentSystem {
     // The type of Storage used, determined by applying the associated component types as TStorage<...> template-parameters.
     using Storage = typename decltype(hana::unpack(component_types, hana::template_<TStorage>))::type;
 
-    // Tuple to store references to the systems.
+    // Tuple to store references to the systems. (std::tuple instead of hana::tuple for std::get<> via type).
     std::tuple<std::reference_wrapper<TSystems>...> _systems;
     // Component Storage.
     Storage _storage;

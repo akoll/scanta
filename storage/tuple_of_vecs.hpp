@@ -4,6 +4,7 @@
 #include <vector>
 
 namespace ecs {
+  namespace storage {
 
   template<typename... TComponents>  
   class TupleOfVecs {
@@ -22,5 +23,7 @@ namespace ecs {
   private:
     std::tuple<std::vector<TComponents>...> _vectors;
   };
+
+  }
 
 }

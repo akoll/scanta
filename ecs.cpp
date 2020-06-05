@@ -1,9 +1,10 @@
+#include "ecs.hpp"
 #include "storage/tuple_of_vecs.hpp"
 
 #include <iostream>
 
 struct Transform {
-  int pos;
+  int pos = 1337;
 };
 
 struct Color {
@@ -33,13 +34,14 @@ public:
   }
 };
 
-#include "ecs.hpp"
-
 int main() {
   TestSystem test_sys;
   TwoSystem two_sys;
 
-  ecs::EntityComponentSystem<ecs::TupleOfVecs>::Runtime ecs(test_sys, two_sys);
+  ecs::EntityComponentSystem<ecs::storage::TupleOfVecs>::SequentialRuntime ecs(
+    test_sys,
+    two_sys
+  );
   ecs();
   ecs();
 
