@@ -25,4 +25,4 @@ struct ToHanaTuple<T<Ts...>> {
 
 // Expose tuple value
 template<typename T>
-constexpr auto to_hana_tuple = internal::ToHanaTuple<T>::tuple;
+constexpr auto to_hana_tuple_t = internal::ToHanaTuple<T>::tuple;
