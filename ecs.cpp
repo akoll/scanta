@@ -11,6 +11,10 @@ struct Color {
   int col;
 };
 
+struct Flammable {
+  bool on_fire;
+};
+
 class TestSystem {
 public:
   void operator()(const Transform& transform, Color& color) {
@@ -42,8 +46,8 @@ int main() {
     test_sys,
     two_sys
   );
-  ecs();
-  ecs();
+
+  for (auto i{0}; i < 5; ++i) ecs();
 
   return 0;
 }

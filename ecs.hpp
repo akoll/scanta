@@ -4,6 +4,7 @@
 
 #include "util/to_hana_tuple_t.hpp"
 
+#include <type_traits>
 #include <tuple>
 // For std::reference_wrapper.
 #include <functional>
@@ -35,6 +36,12 @@ struct EntityComponentSystem {
     // Runs each system once.
     void operator()() {
       hana::for_each(_systems, [this](auto& system) {
+        static_assert(
+          hana::type_c<ct::return_type_t<decltype(system)>> == hana::type_c<void>
+          || std::is_invocable_v<ct::return_type_t<decltype(system)>>,
+          "System return type is neither void nor invokable"
+        );
+
         auto args = hana::transform(hana::transform(get_argtypes(system), hana::traits::decay), [this](auto argtype) {
           using ArgType = typename decltype(argtype)::type;
           return hana::eval_if(hana::find(component_types, argtype) != hana::nothing,
@@ -52,7 +59,13 @@ struct EntityComponentSystem {
             }
           );
         });
-        hana::unpack(args, system);
+
+        // hana::unpack(args, system);
+        return hana::eval_if(
+          std::is_invocable_v<ct::return_type_t<decltype(system)>>,
+          [&](auto _) { return hana::unpack(args, _(system)); },
+          [&](auto _) { hana::unpack(args, _(system)); return _([] {}); }
+        );
       });
     }
   private:
