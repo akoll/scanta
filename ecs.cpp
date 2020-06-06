@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVecs>;
+
 struct Transform {
   int pos = 1337;
 };
@@ -17,9 +19,9 @@ struct Flammable {
 
 class TestSystem {
 public:
-  void operator()(const Transform& transform, Color& color) {
-    std::cout << "Test" << std::endl;
-    std::cout << "tr: " << transform.pos << std::endl;
+  void operator()(ECS::Entity entity, const Transform& transform, Color& color) {
+    std::cout << "Test " << entity << std::endl;
+    std::cout << "tr: " << transform.pos << " " << color.col << std::endl;
     color.col += transform.pos;
     ++result;
   }
@@ -39,15 +41,12 @@ public:
 };
 
 int main() {
-  TestSystem test_sys;
-  TwoSystem two_sys;
-
-  ecs::EntityComponentSystem<ecs::storage::TupleOfVecs>::SequentialRuntime ecs(
-    test_sys,
-    two_sys
+  ECS::SequentialRuntime tick(
+    TestSystem{},
+    TwoSystem{}
   );
 
-  for (auto i{0}; i < 5; ++i) ecs();
+  for (auto i{0}; i < 2; ++i) tick();
 
   return 0;
 }
