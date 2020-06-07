@@ -1,9 +1,11 @@
 #include "ecs.hpp"
+
 #include "storage/tuple_of_vecs.hpp"
+#include "runtime/sequential.hpp"
 
 #include <iostream>
 
-using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVecs>;
+using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVecs, ecs::runtime::Sequential>;
 
 struct Transform {
   int pos = 1337;
@@ -41,10 +43,9 @@ public:
 };
 
 int main() {
-  TwoSystem two_sys;
-  auto tick = ECS::make_runtime<ECS::SequentialRuntime>(
+  ECS::Runtime tick(
     TestSystem{},
-    two_sys
+    TwoSystem{}
   );
 
   for (auto i{0}; i < 2; ++i) tick();
