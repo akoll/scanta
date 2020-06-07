@@ -1,7 +1,7 @@
 default: ecs
 
-ecs: ecs.cpp *.hpp **/*.hpp
-	clang++ -std=c++2a -O3 -o ecs ecs.cpp
+a.out: main.cpp *.hpp **/*.hpp
+	clang++ -std=c++2a -O3 -o a.out main.cpp
 
-run: ecs
-	./ecs
+run: a.out
+	./a.out
