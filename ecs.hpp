@@ -31,9 +31,10 @@ public:
     TRuntime<TStorage, TSystems...> _runtime;
   };
 
-  // template deduction guide to support copying in lvalue-references
-  // NOTE: while this is valid (see http://eel.is/c++draft/temp.deduct.guide#3.sentence-4)
+  // Template deduction guide to support lvalue-references in constructor.
+  // NOTE: While this is valid (see http://eel.is/c++draft/temp.deduct.guide#3.sentence-4)
   // it is not currently supported by gcc (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501).
+  // However, clang supports it (see https://bugs.llvm.org/show_bug.cgi?id=34520).
   template<typename... TSystems>
   Runtime(TSystems&&...) -> Runtime<TSystems...>;
 

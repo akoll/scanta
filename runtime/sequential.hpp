@@ -23,7 +23,7 @@ public:
   using Entity = typename TStorage<>::Entity;
 
   // Systems are passed as rvalue-references and stored in a runtime-owned tuple.
-  Sequential(TSystems&&... systems): _systems(std::make_tuple(std::forward<TSystems>(systems)...)) {};
+  Sequential(TSystems&&... systems): _systems(std::make_tuple(std::forward<TSystems>(systems)...)) {}
 
   template<typename... TRequiredComponents>
   struct ForEntitiesWith {
@@ -42,8 +42,9 @@ public:
         _storage, [&](Entity entity) {
           auto args = hana::transform(argtypes, [this, &entity](auto argtype) {
             using ArgType = typename decltype(argtype)::type;
-            return hana::eval_if(hana::find(component_types, argtype) != hana::nothing,
-              // The argument type is a stored component type:
+            return hana::eval_if(
+              // Check if the argument type is a stored component type:
+              hana::find(component_types, argtype) != hana::nothing,
               [&](auto _) {
                 // reference_wrapper is needed to store the reference in the args container (to later be unpacked into the system call).
                 return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
@@ -51,7 +52,8 @@ public:
               [&](auto _) { return hana::eval_if(
                 // Check if the argument type is a stored system type:
                 hana::find(system_types, argtype) != hana::nothing,
-                [&](auto _) { return std::get<ArgType>(_(_systems)); },
+                // reference_wrapper is needed to store the reference in the args container (to later be unpacked into the system call).
+                [&](auto _) { return std::reference_wrapper(std::get<ArgType>(_(_systems))); },
                 [&](auto _) { return hana::eval_if(
                   argtype == hana::type_c<Entity>,
                   [&](auto _) { return entity; },
