@@ -20,7 +20,7 @@ template<template<typename...> typename TStorage, typename... TSystems>
 requires Storage<TStorage>
 class Sequential {
 public:
-  using Entity = TStorage<>::Entity;
+  using Entity = typename TStorage<>::Entity;
 
   // Systems are passed as rvalue-references and stored in a runtime-owned tuple.
   Sequential(TSystems&&... systems): _systems(std::make_tuple(std::forward<TSystems>(systems)...)) {};
@@ -49,9 +49,9 @@ public:
                 return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
               },
               [&](auto _) { return hana::eval_if(
+                // Check if the argument type is a stored system type:
                 hana::find(system_types, argtype) != hana::nothing,
-                // The argument type is a stored system type:
-                [&](auto _) { return std::get<ArgType>(_systems); },
+                [&](auto _) { return std::get<ArgType>(_(_systems)); },
                 [&](auto _) { return hana::eval_if(
                   argtype == hana::type_c<Entity>,
                   [&](auto _) { return entity; },

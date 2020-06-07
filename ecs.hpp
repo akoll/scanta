@@ -33,9 +33,9 @@ public:
 
   // template deduction guide to support copying in lvalue-references
   // NOTE: while this is valid (see http://eel.is/c++draft/temp.deduct.guide#3.sentence-4)
-  // it is not currently supported by gcc (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501)
-  // template<typename... TSystems>
-  // Runtime(TSystems&&...) -> Runtime<TSystems...>;
+  // it is not currently supported by gcc (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501).
+  template<typename... TSystems>
+  Runtime(TSystems&&...) -> Runtime<TSystems...>;
 
 };
 
