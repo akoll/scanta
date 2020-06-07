@@ -1,0 +1,3 @@
+[submodule "include/bitset2"]
+	path = include/bitset2
+	url = https://github.com/ClaasBontus/bitset2.git
