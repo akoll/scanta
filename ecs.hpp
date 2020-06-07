@@ -20,13 +20,13 @@ Storage{TStorage}
 class EntityComponentSystem {
 public:
 
-  using Entity = TStorage<>::Entity;
+  using Entity = typename TStorage<>::Entity;
 
   template<typename... TSystems>
   class SequentialRuntime {
   public:
     // Systems are passed as rvalue-references and stored in a runtime-owned tuple.
-    SequentialRuntime(TSystems&&... systems): _systems(std::make_tuple(std::move(systems)...)) {};
+    SequentialRuntime(TSystems&&... systems): _systems(std::make_tuple(std::forward<TSystems>(systems)...)) {};
 
     template<typename... TRequiredComponents>
     struct ForEntitiesWith {
@@ -73,6 +73,7 @@ public:
 
       });
     }
+
   private:
     // System types in decayed form (removes cv-qualifiers and reference).
     static constexpr auto system_types = hana::transform(hana::tuple_t<TSystems...>, hana::traits::decay);
@@ -91,11 +92,18 @@ public:
     );
 
     // Tuple to store references to the systems. (std::tuple instead of hana::tuple for std::get<> via type).
-    std::tuple<TSystems...> _systems;
+    std::tuple<std::decay_t<TSystems>...> _systems;
     // The type of Storage used, determined by applying the associated component types as TStorage<...> template-parameters.
     using Storage = typename decltype(hana::unpack(component_types, hana::template_<TStorage>))::type;
     Storage _storage;
   };
+
+  // Deduction guide for passing mixed lvalue and rvalue-references
+  // template<typename... TSystems> SequentialRuntime(TSystems&&...) -> SequentialRuntime<TSystems...>;
+
+  template<template<typename...> typename TRuntime, typename... TSystems>
+  static auto make_runtime(TSystems&&... systems) { return TRuntime<TSystems...>(std::forward<TSystems>(systems)...); }
+
 
 };
 

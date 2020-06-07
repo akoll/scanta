@@ -41,9 +41,10 @@ public:
 };
 
 int main() {
-  ECS::SequentialRuntime tick(
+  TwoSystem two_sys;
+  auto tick = ECS::make_runtime<ECS::SequentialRuntime>(
     TestSystem{},
-    TwoSystem{}
+    two_sys
   );
 
   for (auto i{0}; i < 2; ++i) tick();
