@@ -17,9 +17,6 @@ public:
   using Entity = typename TStorage</* nothing */>::Entity;
 
   template<typename... TSystems>
-  static auto make_runtime(TSystems&&... systems) { return TRuntime<TStorage, TSystems...>(std::forward<TSystems>(systems)...); }
-
-  template<typename... TSystems>
   class Runtime {
   public:
     // template<typename... TSystems>
