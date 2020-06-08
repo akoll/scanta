@@ -22,15 +22,8 @@ class Sequential {
 public:
   using Entity = typename TStorage<>::Entity;
 
-  // Systems are passed as rvalue-references and stored in a runtime-owned tuple.
-  Sequential(TSystems&&... systems): _systems(std::make_tuple(std::forward<TSystems>(systems)...)) {}
-
-  template<typename... TRequiredComponents>
-  struct ForEntitiesWith {
-    auto operator()(auto& storage, auto callable) {
-      return storage.template for_entities_with<TRequiredComponents...>(callable);
-    }
-  };
+  // Systems are default-constructed and stored in a runtime-owned tuple.
+  Sequential(): _systems(std::make_tuple(TSystems{}...)) {}
 
   // Runs each system once.
   void operator()() {
@@ -89,6 +82,16 @@ private:
   // The type of Storage used, determined by applying the associated component types as TStorage<...> template-parameters.
   using Storage = typename decltype(hana::unpack(component_types, hana::template_<TStorage>))::type;
   Storage _storage;
+
+  // Helper struct wrapping storage.for_entities_with. Required to be used for a hana::template_ as an unpack target.
+  template<typename... TRequiredComponents>
+  struct ForEntitiesWith {
+    auto operator()(auto& storage, auto callable) {
+      return storage.template for_entities_with<TRequiredComponents...>(callable);
+    }
+  };
+
+
 };
 
 }

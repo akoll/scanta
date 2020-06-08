@@ -85,11 +85,10 @@ public:
 };
 
 int main() {
-  TwoSystem two_sys;
-  ECS::Runtime tick(
-    TestSystem{},
-    two_sys
-  );
+  ECS::Runtime<
+    TestSystem,
+    TwoSystem
+  > tick;
 
   for (auto i{0}; i < 2; ++i) tick();
 
