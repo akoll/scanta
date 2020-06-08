@@ -1,4 +1,4 @@
-default: ecs
+default: a.out
 
 a.out: main.cpp *.hpp **/*.hpp
 	clang++ -std=c++2a -O3 -o a.out main.cpp
