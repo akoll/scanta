@@ -1,15 +1,15 @@
 #pragma once
 
-#include "../storage/storage.hpp"
-
-#include "../util/callable_traits.hpp"
-
 #include <type_traits>
 #include <tuple>
 #include <functional>
 
 #include <boost/hana.hpp>
 #include <boost/hana/ext/std/tuple.hpp>
+
+#include "../storage/storage.hpp"
+
+#include "../util/callable_traits.hpp"
 
 namespace hana = boost::hana;
 using namespace hana::literals;

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "storage/storage.hpp"
-
 #include <utility>
 #include <functional>
+
+#include "storage/storage.hpp"
 
 namespace ecs {
 

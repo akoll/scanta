@@ -1,7 +1,9 @@
 #pragma once
 
-#include "to_hana_tuple_t.hpp"
 #include <boost/callable_traits.hpp>
+
+#include "to_hana_tuple_t.hpp"
+
 namespace ct = boost::callable_traits;
 
 // Get the argument types of some callable as a hana::tuple_t.
