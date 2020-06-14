@@ -1,96 +1,67 @@
-#include "ecs.hpp"
+#include <iostream>
 
+#include <SDL2/SDL.h>
+#include <glm/glm.hpp>
+
+#include "ecs.hpp"
 #include "storage/tuple_of_vectors.hpp"
 #include "runtime/sequential.hpp"
-
-#include <iostream>
 
 using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
 
 struct Transform {
-  Transform() {
-    std::cout << "new transform" << std::endl;
-  }
-
-  Transform(const Transform&) {
-    std::cout << "copied transform" << std::endl;
-  }
-
-  Transform(Transform&&) {
-    std::cout << "moved transform" << std::endl;
-  }
-  int pos = 1337;
+  glm::vec3 pos;
 };
 
-struct Color {
-  Color() {
-    std::cout << "new color" << std::endl;
-  }
-
-  Color(const Color&) {
-    std::cout << "copied color" << std::endl;
-  }
-
-  Color(Color&&) {
-    std::cout << "moved color" << std::endl;
-  }
-  int col;
-};
-
-class TestSystem {
+class MoveRightSystem {
 public:
-  TestSystem() {
-    std::cout << "new test" << std::endl;
+  void operator()(const ECS::Entity& entity, Transform& transform) {
+    transform.pos =  glm::mod(transform.pos + glm::vec3{ 0.1 + entity * 0.1, glm::cos(entity) * 0.2, 0 }, glm::vec3{640, 480, 0});
   }
-
-  TestSystem(const TestSystem&) {
-    std::cout << "copied test" << std::endl;
-  }
-
-  TestSystem(TestSystem&&) {
-    std::cout << "moved test" << std::endl;
-  }
-
-  void operator()(ECS::Entity entity, const Transform& transform, Color& color) {
-    std::cout << "Test " << entity << std::endl;
-    std::cout << "tr: " << transform.pos << " " << color.col << std::endl;
-    color.col += transform.pos;
-    ++result;
-  }
-
-  const int& get_result() const { return result; }
-private:
-  int result{5};
 };
 
-class TwoSystem {
+SDL_Surface* screen_surface = nullptr;
+
+class RenderSystem {
 public:
-  TwoSystem() {
-    std::cout << "new two" << std::endl;
-  }
-
-  TwoSystem(const TwoSystem&) {
-    std::cout << "copied two" << std::endl;
-  }
-
-  TwoSystem(TwoSystem&&) {
-    std::cout << "moved two" << std::endl;
-  }
-
-  void operator()(const TestSystem& test, const Color& color) const {
-    std::cout << "Two" << std::endl;
-    std::cout << "test: " << test.get_result() << std::endl;
-    std::cout << "col: " << color.col << std::endl;
+  void operator()(const Transform& transform) {
+    SDL_Rect rect{int(transform.pos.x - 2), int(transform.pos.y - 2), 4, 4};
+    SDL_FillRect(screen_surface, &rect, SDL_MapRGB(screen_surface->format, 0xff, 0x00, 0xff));
   }
 };
 
 int main() {
+  SDL_Window* window = NULL;
+  if (SDL_Init( SDL_INIT_VIDEO ) < 0) {
+    printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+    return 1;
+  }
+  window = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN );
+  if(!window) {
+    printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+    return 1;
+  }
+  screen_surface = SDL_GetWindowSurface(window);
+
   ECS::Runtime<
-    TestSystem,
-    TwoSystem
+    MoveRightSystem,
+    RenderSystem
   > tick;
 
-  for (auto i{0}; i < 2; ++i) tick();
+
+  SDL_Event event;
+  while (event.type != SDL_QUIT) {
+    SDL_FillRect(screen_surface, nullptr, SDL_MapRGB(screen_surface->format, 0x00, 0x00, 0x00));
+
+    tick();
+
+    SDL_UpdateWindowSurface(window);
+    SDL_PollEvent(&event);
+  }
+
+  SDL_DestroyWindow( window );
+  SDL_Quit();
+
 
   return 0;
 }

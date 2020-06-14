@@ -44,10 +44,10 @@ public:
 
   // TODO: REMOVE
   TupleOfVectors() {
-    _entities.resize(2);
+    _entities.resize(3);
     for (EntityMetadata& entity_metadata : _entities) entity_metadata.signature = signature_of<TComponents...>;
-    [](auto...){}((std::get<std::vector<TComponents>>(_components).resize(2), 0)...);
-    size = 2;
+    [](auto...){}((std::get<std::vector<TComponents>>(_components).resize(3), 0)...);
+    size = 3;
   }
 
   template<typename TComponent>
@@ -58,7 +58,6 @@ public:
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
     constexpr Signature signature = signature_of<TRequiredComponents...>;
-    std::cout << signature << std::endl;
     for (size_t i{0}; i < size; ++i) {
       if ((_entities[i].signature & signature) == signature)
         callable(Entity{i});
