@@ -13,7 +13,7 @@ using namespace hana::literals;
 namespace ecs::storage {
 
 template<typename... TComponents>
-class TupleOfVecs {
+class TupleOfVectors {
 private:
   static constexpr auto _component_types = hana::tuple_t<TComponents...>;
   using Signature = Bitset2::bitset2<sizeof...(TComponents)>;
@@ -43,7 +43,7 @@ public:
   };
 
   // TODO: REMOVE
-  TupleOfVecs() {
+  TupleOfVectors() {
     _entities.resize(2);
     for (EntityMetadata& entity_metadata : _entities) entity_metadata.signature = signature_of<TComponents...>;
     [](auto...){}((std::get<std::vector<TComponents>>(_components).resize(2), 0)...);

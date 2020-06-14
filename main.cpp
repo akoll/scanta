@@ -1,11 +1,11 @@
 #include "ecs.hpp"
 
-#include "storage/tuple_of_vecs.hpp"
+#include "storage/tuple_of_vectors.hpp"
 #include "runtime/sequential.hpp"
 
 #include <iostream>
 
-using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVecs, ecs::runtime::Sequential>;
+using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
 
 struct Transform {
   Transform() {
