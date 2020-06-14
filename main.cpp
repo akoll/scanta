@@ -43,10 +43,11 @@ int main() {
   }
   screen_surface = SDL_GetWindowSurface(window);
 
-  ECS::Runtime<
-    MoveRightSystem,
-    RenderSystem
-  > tick;
+  MoveRightSystem move_sys;
+  ECS::Runtime tick(
+    RenderSystem{},
+    move_sys
+  );
 
 
   SDL_Event event;

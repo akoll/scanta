@@ -16,9 +16,25 @@ public:
   // Thus, it MAY NOT depend on the stored component types.
   using Entity = typename TStorage</* nothing */>::Entity;
 
-  // The Runtime template for instantiating a callable logic pipeline.
   template<typename... TSystems>
-  using Runtime = TRuntime<TStorage, TSystems...>;
+  class Runtime {
+  public:
+    // template<typename... TSystems>
+    constexpr Runtime(TSystems&&... systems) : _runtime(TRuntime<TStorage, TSystems...>(std::forward<TSystems>(systems)...)) {}
+    constexpr auto operator()(auto... args) {
+      return _runtime(std::forward(args)...);
+    }
+  private:
+    TRuntime<TStorage, TSystems...> _runtime;
+  };
+
+  // Template deduction guide to support lvalue-references in constructor.
+  // NOTE: While this is valid (see http://eel.is/c++draft/temp.deduct.guide#3.sentence-4)
+  // it is not currently supported by gcc (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501).
+  // However, clang supports it (see https://bugs.llvm.org/show_bug.cgi?id=34520).
+  template<typename... TSystems>
+  Runtime(TSystems&&...) -> Runtime<TSystems...>;
+
 };
 
 }
