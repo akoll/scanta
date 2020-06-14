@@ -20,18 +20,23 @@ public:
   }
 };
 
-SDL_Surface* screen_surface = nullptr;
-
 class RenderSystem {
 public:
+  RenderSystem(SDL_Surface* surface) : _surface(surface) {}
+
   void operator()(const Transform& transform) {
     SDL_Rect rect{int(transform.pos.x - 2), int(transform.pos.y - 2), 4, 4};
-    SDL_FillRect(screen_surface, &rect, SDL_MapRGB(screen_surface->format, 0xff, 0x00, 0xff));
+    SDL_FillRect(_surface, &rect, SDL_MapRGB(_surface->format, 0xff, 0x00, 0xff));
   }
+
+private:
+  SDL_Surface* _surface;
 };
 
 int main() {
   SDL_Window* window = NULL;
+  SDL_Surface* screen_surface = nullptr;
+
   if (SDL_Init( SDL_INIT_VIDEO ) < 0) {
     printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
     return 1;
@@ -45,7 +50,7 @@ int main() {
 
   MoveRightSystem move_sys;
   ECS::Runtime tick(
-    RenderSystem{},
+    RenderSystem(screen_surface),
     move_sys
   );
 
