@@ -16,6 +16,8 @@ public:
   // Thus, it MAY NOT depend on the stored component types.
   using Entity = typename TStorage</* nothing */>::Entity;
 
+  // The Runtime template for instantiating a callable logic pipeline.
+  // (Unfortunately) this needs to be a class because template deduction guides are not implemented for alias templates (yet)
   template<typename... TSystems>
   class Runtime {
   public:
