@@ -30,8 +30,7 @@ public:
     hana::for_each(_systems, [this](auto& system) {
       constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
       constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes), component_types);
-      (typename decltype(hana::unpack(component_argtypes, hana::template_<ForEntitiesWith>))::type){}(
-        _storage, [&](Entity entity) {
+      for_entities_with(component_argtypes, [&](Entity entity) {
           auto args = hana::transform(argtypes, [this, &entity](auto argtype) {
             using ArgType = typename decltype(argtype)::type;
             // Check if the argument type is a stored component type:
@@ -82,12 +81,18 @@ private:
   using Storage = typename decltype(hana::unpack(component_types, hana::template_<TStorage>))::type;
   Storage _storage;
 
+  // Helper class for easier hana::template_ unpacking.
   template<typename... TRequiredComponents>
   struct ForEntitiesWith {
-    auto operator()(auto& storage, auto callable) {
+    auto operator()(auto& storage, auto&& callable) {
       return storage.template for_entities_with<TRequiredComponents...>(callable);
     }
   };
+
+  // Helper function wrapping ForEntitiesWith instantiation.
+  auto for_entities_with(auto component_argtypes, auto&& callable) {
+      (typename decltype(hana::unpack(component_argtypes, hana::template_<ForEntitiesWith>))::type){}(_storage, callable);
+  }
 
 };
 
