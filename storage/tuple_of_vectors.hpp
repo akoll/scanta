@@ -44,10 +44,12 @@ public:
 
   // TODO: REMOVE
   TupleOfVectors() {
-    _entities.resize(3);
-    ((std::get<std::vector<TStoredComponents>>(_components).resize(3), 0), ...);
-    set_components(1, TStoredComponents{}...);
-    size = 3;
+    static constexpr auto count = 42;
+    _entities.resize(count);
+    ((std::get<std::vector<TStoredComponents>>(_components).resize(count), 0), ...);
+    for (Entity entity{0}; entity < count; ++entity)
+      set_components(entity, TStoredComponents{}...);
+    size = count;
   }
 
   template<typename TComponent>
@@ -76,7 +78,7 @@ public:
   }
 
 private:
-  size_t size;
+  size_t size = 0;
   std::vector<EntityMetadata> _entities;
   std::tuple<std::vector<TStoredComponents>...> _components;
 };
