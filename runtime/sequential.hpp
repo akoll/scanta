@@ -34,24 +34,23 @@ public:
         _storage, [&](Entity entity) {
           auto args = hana::transform(argtypes, [this, &entity](auto argtype) {
             using ArgType = typename decltype(argtype)::type;
-            return hana::eval_if(
-              // Check if the argument type is a stored component type:
-              hana::find(component_types, argtype) != hana::nothing,
-              [&](auto _) {
-                // reference_wrapper is needed to store the reference in the args container (to later be unpacked into the system call).
-                return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
-              },
-              [&](auto _) { return hana::eval_if(
-                // Check if the argument type is a stored system type:
-                hana::find(system_types, argtype) != hana::nothing,
-                [&](auto _) { return std::reference_wrapper(std::get<ArgType>(_(_systems))); },
-                [&](auto _) { return hana::eval_if(
+            // Check if the argument type is a stored component type:
+            if constexpr (hana::find(component_types, argtype) != hana::nothing) {
+              // reference_wrapper is needed to store the reference in the args container (to later be unpacked into the system call).
+              return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
+            } else {
+              // Check if the argument type is a stored system type:
+              if constexpr (hana::find(system_types, argtype) != hana::nothing) {
+                return std::reference_wrapper(std::get<ArgType>(_systems));
+              } else {
+                // Use eval_if instead of constexpr if for conditional static_assert.
+                return hana::eval_if(
                   argtype == hana::type_c<Entity>,
                   [&](auto _) { return std::reference_wrapper(entity); },
                   [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
-                ); }
-              ); }
-            );
+                );
+              }
+            }
           });
           return hana::unpack(args, system);
         }
