@@ -12,15 +12,15 @@ using namespace hana::literals;
 
 namespace ecs::storage {
 
-template<typename... TComponents>
+template<typename... TStoredComponents>
 class TupleOfVectors {
 private:
-  static constexpr auto _component_types = hana::tuple_t<TComponents...>;
-  using Signature = Bitset2::bitset2<sizeof...(TComponents)>;
+  static constexpr auto _component_types = hana::tuple_t<TStoredComponents...>;
+  using Signature = Bitset2::bitset2<sizeof...(TStoredComponents)>;
 
   template<typename TComponent>
   static constexpr size_t _component_index = hana::find_if(
-    hana::make_range(0_c, hana::size_c<sizeof...(TComponents)>),
+    hana::make_range(0_c, hana::size_c<sizeof...(TStoredComponents)>),
     [](auto index) { return _component_types[index] == hana::type_c<TComponent>; }
   ).value();
 
@@ -45,18 +45,29 @@ public:
   // TODO: REMOVE
   TupleOfVectors() {
     _entities.resize(3);
-    for (EntityMetadata& entity_metadata : _entities) entity_metadata.signature = signature_of<TComponents...>;
-    [](auto...){}((std::get<std::vector<TComponents>>(_components).resize(3), 0)...);
+    ((std::get<std::vector<TStoredComponents>>(_components).resize(3), 0), ...);
+    set_components(1, TStoredComponents{}...);
     size = 3;
   }
 
   template<typename TComponent>
   TComponent& get_component(Entity entity) {
+    // TODO: static_assert component type handled
     return std::get<std::vector<TComponent>>(_components)[entity];
+  }
+
+  template<typename... TComponents>
+  void set_components(Entity entity, TComponents&&... components) {
+    // TODO: static_assert component type handled
+    // Set associated component bits.
+    _entities[entity].signature |= signature_of<TComponents...>;
+    // Assign components from parameters.
+    ((get_component<TComponents>(entity) = std::forward<TComponents>(components)), ...);
   }
 
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
+    // TODO: static_assert component types handled
     constexpr Signature signature = signature_of<TRequiredComponents...>;
     for (size_t i{0}; i < size; ++i) {
       if ((_entities[i].signature & signature) == signature)
@@ -67,7 +78,7 @@ public:
 private:
   size_t size;
   std::vector<EntityMetadata> _entities;
-  std::tuple<std::vector<TComponents>...> _components;
+  std::tuple<std::vector<TStoredComponents>...> _components;
 };
 
 }
