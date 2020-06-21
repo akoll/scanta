@@ -2,6 +2,7 @@
 
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
+#include <chrono>
 
 #include "ecs/ecs.hpp"
 #include "ecs/storage/tuple_of_vectors.hpp"
@@ -38,10 +39,27 @@ public:
       (std::sin(entity / 30.0) + 1.0) * 0.5 * 0xff
     ));
   }
-
 private:
   SDL_Surface* _surface;
 };
+
+class FrametimeSystem {
+public:
+  FrametimeSystem() {
+    _last = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+  }
+
+  void operator()(double delta_time) {
+    long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+    if (now - _last >= 500) {
+      std::cout << delta_time << "ms" << std::endl;
+      _last = now;
+    }
+  }
+private:
+  long long _last;
+};
+
 
 int main() {
   SDL_Window* window = NULL;
@@ -61,7 +79,8 @@ int main() {
   MoveRightSystem move_sys;
   ECS::Runtime tick(
     RenderSystem(screen_surface),
-    move_sys
+    move_sys,
+    FrametimeSystem{}
   );
 
 

@@ -44,12 +44,20 @@ public:
 
   // TODO: REMOVE
   TupleOfVectors() {
-    static constexpr auto count = 420;
+    static constexpr auto count = 512;
     _entities.resize(count);
     ((std::get<std::vector<TStoredComponents>>(_components).resize(count), 0), ...);
     for (Entity entity{0}; entity < count; ++entity)
       set_components(entity, TStoredComponents{}...);
-    size = count;
+    _size = count;
+  }
+
+  // TODO: REMOVE
+  void add_entity() {
+    ++_size;
+    _entities.resize(_size);
+    ((std::get<std::vector<TStoredComponents>>(_components).resize(_size), 0), ...);
+    set_components(_size - 1, TStoredComponents{}...);
   }
 
   template<typename TComponent>
@@ -69,16 +77,18 @@ public:
 
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
-    // TODO: static_assert component types handled
-    constexpr Signature signature = signature_of<TRequiredComponents...>;
-    for (size_t i{0}; i < size; ++i) {
-      if ((_entities[i].signature & signature) == signature)
-        callable(Entity{i});
-    }
+    if constexpr(sizeof...(TRequiredComponents) > 0) {
+      // TODO: static_assert component types handled
+      constexpr Signature signature = signature_of<TRequiredComponents...>;
+      for (size_t i{0}; i < _size; ++i) {
+        if ((_entities[i].signature & signature) == signature)
+          callable(Entity{i});
+      }
+    } else callable(Entity{0}); // TODO: reserve 0 as null-entity
   }
 
 private:
-  size_t size = 0;
+  size_t _size = 0;
   std::vector<EntityMetadata> _entities;
   std::tuple<std::vector<TStoredComponents>...> _components;
 };
