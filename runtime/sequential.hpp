@@ -10,6 +10,7 @@
 #include "../storage/storage.hpp"
 
 #include "../util/callable_traits.hpp"
+#include "../util/timing/timer.hpp"
 
 namespace hana = boost::hana;
 using namespace hana::literals;
@@ -27,11 +28,12 @@ public:
 
   // Runs each system once.
   void operator()() {
-    hana::for_each(_systems, [this](auto& system) {
+    double delta_time = _timer.reset();
+    hana::for_each(_systems, [this, &delta_time](auto& system) {
       constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
       constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes), component_types);
       for_entities_with(component_argtypes, [&](Entity entity) {
-          auto args = hana::transform(argtypes, [this, &entity](auto argtype) {
+          auto args = hana::transform(argtypes, [this, &entity, &delta_time](auto argtype) {
             using ArgType = typename decltype(argtype)::type;
             // Check if the argument type is a stored component type:
             if constexpr (hana::find(component_types, argtype) != hana::nothing) {
@@ -43,11 +45,15 @@ public:
                 return std::reference_wrapper(std::get<ArgType>(_systems));
               } else {
                 // Use eval_if instead of constexpr if for conditional static_assert.
-                return hana::eval_if(
-                  argtype == hana::type_c<Entity>,
-                  [&](auto _) { return std::reference_wrapper(entity); },
-                  [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
-                );
+                if constexpr (argtype == hana::type_c<Entity>) {
+                  return std::reference_wrapper(entity);
+                } else {
+                  return hana::eval_if(
+                    hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing,
+                    [&](auto _) { return delta_time; },
+                    [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
+                  );
+                }
               }
             }
           });
@@ -71,7 +77,10 @@ private:
     )),
     hana::union_(
       hana::to_set(system_types),
-      hana::to_set(hana::tuple_t<Entity>)
+      hana::to_set(hana::tuple_t<
+        Entity,
+        double, float // delta_time
+      >)
     )
   );
 
@@ -80,6 +89,10 @@ private:
   // The type of Storage used, determined by applying the associated component types as TStorage<...> template-parameters.
   using Storage = typename decltype(hana::unpack(component_types, hana::template_<TStorage>))::type;
   Storage _storage;
+
+  // Timer for measuring frame times
+  // TODO: try average over time timer
+  timing::Timer _timer;
 
   // Helper class for easier hana::template_ unpacking.
   template<typename... TRequiredComponents>

@@ -15,8 +15,8 @@ struct Transform {
 
 class MoveRightSystem {
 public:
-  void operator()(const ECS::Entity& entity, Transform& transform) {
-    transform.pos =  glm::mod(transform.pos + glm::vec3{ 0.1 + entity * 0.1, glm::cos(entity) * 0.2, 0 }, glm::vec3{640, 480, 0});
+  void operator()(const ECS::Entity& entity, float delta_time, Transform& transform) {
+    transform.pos =  glm::mod(transform.pos + glm::vec3{ 0.1 + entity * 0.1, glm::cos(entity) * 0.2, 0 } * delta_time, glm::vec3{640, 480, 0});
   }
 };
 
