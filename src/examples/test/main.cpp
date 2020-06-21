@@ -49,17 +49,23 @@ public:
     _last = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
   }
 
-  void operator()(double delta_time) {
+  auto operator()(ecs::RuntimeManager& manager, double delta_time) {
+    size_t count = 0;
     long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-    if (now - _last >= 500) {
-      std::cout << delta_time << "ms" << std::endl;
+    if (now - _last >= 250) {
+      std::cout << manager.get_entity_count() << "#, " << delta_time << "ms" << std::endl;
       _last = now;
+      count = ++_count;
     }
+    return [count](ecs::DeferredManager& manager) {
+      for (auto i{0}; i < count; ++i)
+        manager.spawn_entity();
+    };
   }
 private:
+  size_t _count = 0;
   long long _last;
 };
-
 
 int main() {
   SDL_Window* window = NULL;

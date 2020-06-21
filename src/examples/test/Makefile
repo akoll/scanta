@@ -1,5 +1,5 @@
 CC = clang++
-CFLAGS = -Wall -std=c++2a -O3 -I../.. -I../../../lib -lSDL2
+CFLAGS = -Wall -std=c++2a -O3 -fopenmp -I../.. -I../../../lib -lSDL2
 
 %.out: %.cpp $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS)
