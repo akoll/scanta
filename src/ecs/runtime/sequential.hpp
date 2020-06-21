@@ -128,7 +128,7 @@ private:
     using SequentialRuntimeManager::get_entity_count;
 
     void spawn_entity() override {
-      _runtime._storage.spawn_entity();
+      _runtime._storage.new_entity();
     }
   protected:
     using SequentialRuntimeManager::_runtime;

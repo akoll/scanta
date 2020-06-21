@@ -24,18 +24,8 @@ private:
     [](auto index) { return _component_types[index] == hana::type_c<TComponent>; }
   ).value();
 
-  template<typename TFirst>
-  static constexpr auto make_signature() {
-    return Signature(1) << _component_index<TFirst>;
-  }
-
-  template<typename TFirst, typename TSecond, typename... TRest>
-  static constexpr auto make_signature() {
-    return make_signature<TSecond, TRest...>() | (Signature(1) << _component_index<TFirst>);
-  }
-
   template<typename... TRequiredComponents>
-  static constexpr Signature signature_of = make_signature<TRequiredComponents...>();
+  static constexpr Signature signature_of = (Signature(0) |= ... |= (Signature(1) << _component_index<TRequiredComponents>));
 public:
   using Entity = size_t;
   struct EntityMetadata {
@@ -58,14 +48,6 @@ public:
     return std::get<std::vector<TComponent>>(_components)[entity];
   }
 
-  // TODO: REMOVE
-  void spawn_entity() {
-    ++_size;
-    _entities.resize(_size);
-    ((std::get<std::vector<TStoredComponents>>(_components).resize(_size), 0), ...);
-    set_components(_size - 1, TStoredComponents{}...);
-  }
-
   size_t get_size() {
     return _size;
   }
@@ -78,6 +60,14 @@ public:
     // Assign components from parameters.
     ((get_component<TComponents>(entity) = std::forward<TComponents>(components)), ...);
   }
+
+  void new_entity(auto&&... components) {
+    ++_size;
+    _entities.resize(_size);
+    ((std::get<std::vector<TStoredComponents>>(_components).resize(_size), 0), ...);
+    set_components(_size - 1, std::forward(components)...);
+  }
+
 
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
