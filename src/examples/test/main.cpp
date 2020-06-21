@@ -15,8 +15,14 @@ struct Transform {
 
 class MoveRightSystem {
 public:
-  void operator()(const ECS::Entity& entity, float delta_time, Transform& transform) {
-    transform.pos =  glm::mod(transform.pos + glm::vec3{ 0.1 + entity * 0.1, glm::cos(entity) * 0.2, 0 } * delta_time, glm::vec3{640, 480, 0});
+  void operator()(ECS::Entity entity, float delta_time, Transform& transform) {
+    transform.pos =  glm::mod(
+      glm::vec3{
+        320 + glm::sin(transform.pos.z + entity * 0.1) * 100,
+        240 + glm::cos(transform.pos.z + entity * (6.282 / 42)) * 100,
+        transform.pos.z - 0.001 * delta_time},
+      glm::vec3{640, 480, 6.283}
+    );
   }
 };
 
@@ -24,9 +30,13 @@ class RenderSystem {
 public:
   RenderSystem(SDL_Surface* surface) : _surface(surface) {}
 
-  void operator()(const Transform& transform) {
+  void operator()(ECS::Entity entity, const Transform& transform) {
     SDL_Rect rect{int(transform.pos.x - 2), int(transform.pos.y - 2), 4, 4};
-    SDL_FillRect(_surface, &rect, SDL_MapRGB(_surface->format, 0xff, 0x00, 0xff));
+    SDL_FillRect(_surface, &rect, SDL_MapRGB(_surface->format,
+      (std::sin(transform.pos.z) + 1.0) * 0.5 * 0xff,
+      (std::cos(entity / 30.0) + 1.0) * 0.5 * 0x80,
+      (std::sin(entity / 30.0) + 1.0) * 0.5 * 0xff
+    ));
   }
 
 private:
@@ -41,7 +51,7 @@ int main() {
     printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
     return 1;
   }
-  window = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN );
+  window = SDL_CreateWindow( "ECS Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN );
   if(!window) {
     printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
     return 1;
