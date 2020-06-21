@@ -3,9 +3,9 @@
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 
-#include "ecs.hpp"
-#include "storage/tuple_of_vectors.hpp"
-#include "runtime/sequential.hpp"
+#include "ecs/ecs.hpp"
+#include "ecs/storage/tuple_of_vectors.hpp"
+#include "ecs/runtime/sequential.hpp"
 
 using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
 

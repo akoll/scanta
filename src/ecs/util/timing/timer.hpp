@@ -34,7 +34,7 @@ public:
     return elapsed * 0.000001;
   }
 private:
-  // TODO: benchmark usage of micros since epoch here (to avoid time_point_cast)
+  // TODO: benchmark usage of nanos since epoch here (to avoid time_point_cast)
   std::chrono::time_point<std::chrono::high_resolution_clock> _last;
 };
 

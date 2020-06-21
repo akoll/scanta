@@ -4,7 +4,7 @@
 #include <tuple>
 #include <vector>
 
-#include "../include/bitset2/bitset2.hpp"
+#include "bitset2/bitset2.hpp"
 
 #include <boost/hana.hpp>
 namespace hana = boost::hana;
