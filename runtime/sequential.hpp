@@ -84,14 +84,15 @@ private:
   // Helper class for easier hana::template_ unpacking.
   template<typename... TRequiredComponents>
   struct ForEntitiesWith {
-    auto operator()(auto& storage, auto&& callable) {
+    static auto run(auto& storage, auto&& callable) {
       return storage.template for_entities_with<TRequiredComponents...>(callable);
     }
   };
 
   // Helper function wrapping ForEntitiesWith instantiation.
   auto for_entities_with(auto component_argtypes, auto&& callable) {
-      (typename decltype(hana::unpack(component_argtypes, hana::template_<ForEntitiesWith>))::type){}(_storage, callable);
+    using Instance = typename decltype(hana::unpack(component_argtypes, hana::template_<ForEntitiesWith>))::type;
+    return Instance::run(_storage, callable);
   }
 
 };
