@@ -35,7 +35,7 @@ public:
   // Runs each system once.
   void operator()() {
     double delta_time = _timer.reset();
-    std::vector<std::function<void(ecs::DeferredManager&)>> deferred;
+    std::vector<std::function<void(SequentialDeferredManager&)>> deferred;
     hana::for_each(_systems, [&](auto& system) {
       using ReturnType = ct::return_type_t<decltype(system)>;
       constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
@@ -71,7 +71,7 @@ public:
             }
           }
         });
-        if constexpr (std::is_invocable_v<ReturnType, DeferredManager&>) {
+        if constexpr (std::is_invocable_v<ReturnType, SequentialDeferredManager&>) {
           deferred.push_back(hana::unpack(args, system));
         } else {
           // Discard return value.
@@ -121,14 +121,14 @@ private:
     Runtime& _runtime;
   } _runtime_manager;
 
-  class SequentialDeferredManager : public ecs::DeferredManager, public SequentialRuntimeManager {
+  class SequentialDeferredManager : public SequentialRuntimeManager {
   public:
     SequentialDeferredManager(Runtime& runtime) : SequentialRuntimeManager(runtime) {}
 
     using SequentialRuntimeManager::get_entity_count;
 
-    void spawn_entity() override {
-      _runtime._storage.new_entity();
+    void spawn_entity(auto&&... components) {
+      _runtime._storage.new_entity(std::forward<decltype(components)>(components)...);
     }
   protected:
     using SequentialRuntimeManager::_runtime;

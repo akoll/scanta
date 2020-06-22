@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include "ecs/ecs.hpp"
+#include "ecs/manager.hpp"
 #include "ecs/storage/tuple_of_vectors.hpp"
 #include "ecs/runtime/sequential.hpp"
 
@@ -57,9 +58,9 @@ public:
       _last = now;
       count = ++_count;
     }
-    return [count](ecs::DeferredManager& manager) {
+    return [count]<ecs::DeferredManager Manager>(Manager& manager) {
       for (auto i{0}; i < count; ++i)
-        manager.spawn_entity();
+        manager.spawn_entity(Transform{});
     };
   }
 private:

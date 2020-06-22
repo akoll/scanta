@@ -19,11 +19,17 @@ private:
   using Signature = Bitset2::bitset2<sizeof...(TStoredComponents)>;
 
   template<typename TComponent>
-  static constexpr size_t _component_index = hana::find_if(
-    hana::make_range(0_c, hana::size_c<sizeof...(TStoredComponents)>),
-    [](auto index) { return _component_types[index] == hana::type_c<TComponent>; }
-    // TODO: static_assert optionalness
-  ).value();
+  static constexpr auto find_component_index() {
+    auto index = hana::find_if(
+      hana::make_range(0_c, hana::size_c<sizeof...(TStoredComponents)>),
+      [](auto index) { return _component_types[index] == hana::type_c<TComponent>; }
+    );
+    static_assert(index != hana::nothing, "Component type is not stored.");
+    return index.value();
+  }
+
+  template<typename TComponent>
+  static constexpr size_t _component_index = find_component_index<TComponent>();
 
   template<typename... TRequiredComponents>
   static constexpr Signature signature_of = (Signature(0) |= ... |= (Signature(1) << _component_index<TRequiredComponents>));
@@ -57,16 +63,16 @@ public:
   void set_components(Entity entity, TComponents&&... components) {
     // TODO: static_assert component type handled
     // Set associated component bits.
-    _entities[entity].signature |= signature_of<TComponents...>;
+    _entities[entity].signature |= signature_of<std::decay_t<TComponents>...>;
     // Assign components from parameters.
-    ((get_component<TComponents>(entity) = std::forward<TComponents>(components)), ...);
+    ((get_component<std::decay_t<TComponents>>(entity) = std::forward<TComponents>(components)), ...);
   }
 
   void new_entity(auto&&... components) {
     ++_size;
     _entities.resize(_size);
     ((std::get<std::vector<TStoredComponents>>(_components).resize(_size), 0), ...);
-    set_components(_size - 1, std::forward(components)...);
+    set_components(_size - 1, std::forward<decltype(components)>(components)...);
   }
 
 
