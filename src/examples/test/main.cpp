@@ -85,7 +85,7 @@ int main() {
   MoveRightSystem move_sys;
   ECS::Runtime tick(
     RenderSystem(screen_surface),
-    move_sys,
+    std::move(move_sys),
     FrametimeSystem{}
   );
 

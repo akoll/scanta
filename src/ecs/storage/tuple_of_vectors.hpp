@@ -22,6 +22,7 @@ private:
   static constexpr size_t _component_index = hana::find_if(
     hana::make_range(0_c, hana::size_c<sizeof...(TStoredComponents)>),
     [](auto index) { return _component_types[index] == hana::type_c<TComponent>; }
+    // TODO: static_assert optionalness
   ).value();
 
   template<typename... TRequiredComponents>

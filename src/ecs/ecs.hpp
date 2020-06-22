@@ -21,7 +21,9 @@ public:
   template<typename... TSystems>
   class Runtime {
   public:
-    constexpr Runtime(TSystems&&... systems) : _runtime(TRuntime<TStorage, TSystems...>(std::forward<TSystems>(systems)...)) {}
+    constexpr Runtime(TSystems&&... systems) : _runtime(TRuntime<TStorage, TSystems...>(std::forward<TSystems>(systems)...)) {
+      static_assert((std::is_rvalue_reference_v<decltype(systems)> && ...), "Systems may only be moved in, not copied. Use std::move to transfer ownership.");
+    }
     constexpr auto operator()(auto... args) {
       return _runtime(std::forward(args)...);
     }
