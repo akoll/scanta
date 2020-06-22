@@ -6,7 +6,7 @@ namespace ecs {
 // TODO: justify polymorphism
 class RuntimeManager {
 public:
-  virtual size_t get_entity_count() = 0;
+  virtual size_t get_entity_count() const = 0;
 };
 
 // Manager concept for deferred operations.

@@ -50,7 +50,7 @@ public:
     _last = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
   }
 
-  auto operator()(ecs::RuntimeManager& manager, double delta_time) {
+  auto operator()(const ecs::RuntimeManager& manager, double delta_time) {
     size_t count = 0;
     long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
     if (now - _last >= 250) {

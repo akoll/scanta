@@ -86,9 +86,10 @@ public:
         // TODO: call with manager (since this is sequential)
           callable(Entity{i});
       }
-    } else callable(Entity{0}); // TODO: reserve 0 as null-entity
+    } else callable(Entity{0}); // TODO: move check to runtime to avoid 0-reservation
   }
 
+  // TODO: parametrize parallelization
   template<typename... TRequiredComponents>
   void for_entities_with_parallel(auto callable) {
     if constexpr(sizeof...(TRequiredComponents) > 0) {
@@ -100,7 +101,7 @@ public:
         // TODO: maybe a parallel manager?
           callable(Entity{i});
       }
-    } else callable(Entity{0}); // TODO: reserve 0 as null-entity
+    } else callable(Entity{0}); // TODO: move check to runtime
   }
 
 private:

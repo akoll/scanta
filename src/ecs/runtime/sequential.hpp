@@ -83,6 +83,7 @@ public:
   }
 
 private:
+
   // System types in decayed form (removes cv-qualifiers and reference).
   static constexpr auto system_types = hana::transform(hana::tuple_t<TSystems...>, hana::traits::decay);
   // Set of component types used by any system in decayed form (removes cv-qualifiers and reference).
@@ -90,7 +91,7 @@ private:
   static constexpr auto component_types = hana::difference(
     hana::to_set(hana::transform(
       hana::flatten(
-        hana::make_tuple(to_hana_tuple_t<ct::args_t<TSystems>>...)
+        hana::make_tuple(to_hana_tuple_t<ct::args_t<decltype(&TSystems::operator())>>...)
       ),
       hana::traits::decay
     )),
@@ -114,7 +115,7 @@ private:
   public:
     SequentialRuntimeManager(Runtime& runtime) : _runtime(runtime) {}
 
-    size_t get_entity_count() override {
+    size_t get_entity_count() const override {
       return _runtime._storage.get_size();
     }
   protected:
@@ -127,7 +128,7 @@ private:
 
     using SequentialRuntimeManager::get_entity_count;
 
-    void spawn_entity(auto&&... components) {
+    void spawn_entity(auto&&... components) const {
       _runtime._storage.new_entity(std::forward<decltype(components)>(components)...);
     }
   protected:
