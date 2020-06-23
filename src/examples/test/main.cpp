@@ -58,7 +58,7 @@ public:
       _last = now;
       count = ++_count;
     }
-    return [count]<ecs::DeferredManager Manager>(Manager& manager) {
+    return [count]<ecs::DeferredManager Manager>(const Manager& manager) {
       for (auto i{0}; i < count; ++i)
         manager.spawn_entity(Transform{});
     };

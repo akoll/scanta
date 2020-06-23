@@ -35,7 +35,7 @@ public:
   // Runs each system once.
   void operator()() {
     double delta_time = _timer.reset();
-    std::vector<std::function<void(SequentialDeferredManager&)>> deferred;
+    std::vector<std::function<void(const SequentialDeferredManager&)>> deferred;
     hana::for_each(_systems, [&](auto& system) {
       using ReturnType = ct::return_type_t<decltype(system)>;
       constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
@@ -71,7 +71,7 @@ public:
             }
           }
         });
-        if constexpr (std::is_invocable_v<ReturnType, SequentialDeferredManager&>) {
+        if constexpr (std::is_invocable_v<ReturnType, const SequentialDeferredManager&>) {
           deferred.push_back(hana::unpack(args, system));
         } else {
           // Discard return value.
@@ -83,6 +83,8 @@ public:
   }
 
 private:
+  // Forward declaration.
+  class SequentialRuntimeManager;
 
   // System types in decayed form (removes cv-qualifiers and reference).
   static constexpr auto system_types = hana::transform(hana::tuple_t<TSystems...>, hana::traits::decay);
