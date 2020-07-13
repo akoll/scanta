@@ -7,6 +7,7 @@
 #include <boost/hana.hpp>
 #include <boost/hana/ext/std/tuple.hpp>
 
+#include "../info.hpp"
 #include "../storage/storage.hpp"
 #include "../manager.hpp"
 
@@ -39,17 +40,17 @@ public:
     hana::for_each(_systems, [&](auto& system) {
       using ReturnType = ct::return_type_t<decltype(system)>;
       constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
-      constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes), component_types);
+      constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes), Info::components);
       for_entities_with(component_argtypes, [&](Entity entity) {
         auto args = hana::transform(argtypes, [&](auto argtype) {
           using ArgType = typename decltype(argtype)::type;
           // Check if the argument type is a stored component type:
-          if constexpr (hana::find(component_types, argtype) != hana::nothing) {
+          if constexpr (hana::find(Info::components, argtype) != hana::nothing) {
             // reference_wrapper is needed to store the reference in the args container (to later be unpacked into the system call).
             return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
           } else {
             // Check if the argument type is a stored system type:
-            if constexpr (hana::find(system_types, argtype) != hana::nothing) {
+            if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
               return std::reference_wrapper(std::get<ArgType>(_systems));
             } else {
               // Use eval_if instead of constexpr if for conditional static_assert.
@@ -83,34 +84,12 @@ public:
   }
 
 private:
-  // Forward declaration.
-  class SequentialRuntimeManager;
-
-  // System types in decayed form (removes cv-qualifiers and reference).
-  static constexpr auto system_types = hana::transform(hana::tuple_t<TSystems...>, hana::traits::decay);
-  // Set of component types used by any system in decayed form (removes cv-qualifiers and reference).
-  // System-types and special types (Entity) are discarded.
-  static constexpr auto component_types = hana::difference(
-    hana::to_set(hana::transform(
-      hana::flatten(
-        hana::make_tuple(to_hana_tuple_t<ct::args_t<decltype(&TSystems::operator())>>...)
-      ),
-      hana::traits::decay
-    )),
-    hana::union_(
-      hana::to_set(system_types),
-      hana::to_set(hana::tuple_t<
-        Entity,
-        double, float, // delta_time
-        ecs::RuntimeManager
-      >)
-    )
-  );
+  using Info = ecs::Info<Entity, TSystems...>;
 
   // Tuple to store references to the systems. (std::tuple instead of hana::tuple for std::get<> via type).
   std::tuple<std::decay_t<TSystems>...> _systems;
   // The type of Storage used, determined by applying the associated component types as TStorage<...> template-parameters.
-  using Storage = typename decltype(hana::unpack(component_types, hana::template_<TStorage>))::type;
+  using Storage = typename decltype(hana::unpack(Info::components, hana::template_<TStorage>))::type;
   Storage _storage;
 
   class SequentialRuntimeManager : public virtual ecs::RuntimeManager {
