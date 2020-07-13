@@ -133,6 +133,10 @@ private:
     void spawn_entity(auto&&... components) const {
       _runtime._storage.new_entity(std::forward<decltype(components)>(components)...);
     }
+
+    void remove_entity(Entity entity) const {
+      _runtime._storage.remove_entity(entity);
+    }
   protected:
     using SequentialRuntimeManager::_runtime;
   } _deferred_manager;

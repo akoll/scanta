@@ -15,13 +15,18 @@ struct Transform {
   glm::vec3 pos;
 };
 
+struct Lifetime {
+  float millis_left;
+};
+
 class MoveRightSystem {
 public:
   void operator()(ECS::Entity entity, float delta_time, Transform& transform) {
     transform.pos =  glm::mod(
       glm::vec3{
-        320 + glm::sin(transform.pos.z + entity * 0.1) * 100,
-        240 + glm::cos(transform.pos.z + entity * (6.282 / 42)) * 100,
+        // 320 + glm::sin(transform.pos.z + entity * 0.01) * 250,
+        320 + glm::sin(transform.pos.z + entity * (2.0 / 210)) * 170,
+        240 + glm::cos(transform.pos.z + entity * (2.0 / 420)) * 170,
         transform.pos.z - 0.001 * delta_time},
       glm::vec3{640, 480, 6.283}
     );
@@ -32,12 +37,13 @@ class RenderSystem {
 public:
   RenderSystem(SDL_Surface* surface) : _surface(surface) {}
 
-  void operator()(ECS::Entity entity, const Transform& transform) {
+  void operator()(ECS::Entity entity, const Transform& transform, const Lifetime& lifetime) {
     SDL_Rect rect{int(transform.pos.x - 2), int(transform.pos.y - 2), 4, 4};
+    Uint8 col = std::max(lifetime.millis_left / 500 * 0xff, 0.0f);
     SDL_FillRect(_surface, &rect, SDL_MapRGB(_surface->format,
-      (std::sin(transform.pos.z) + 1.0) * 0.5 * 0xff,
-      (std::cos(entity / 30.0) + 1.0) * 0.5 * 0x80,
-      (std::sin(entity / 30.0) + 1.0) * 0.5 * 0xff
+      (std::sin(transform.pos.z) + 1.0) * 0.5 * col,
+      (std::cos(entity / 30.0) + 1.0) * 0.5 * col,
+      (std::sin(entity / 30.0) + 1.0) * 0.5 * col
     ));
   }
 private:
@@ -46,26 +52,47 @@ private:
 
 class FrametimeSystem {
 public:
-  FrametimeSystem() {
-    _last = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-  }
+  FrametimeSystem() : _last(std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()) {}
 
-  auto operator()(const ecs::RuntimeManager& manager, double delta_time) {
-    size_t count = 0;
+  void operator()(const ecs::RuntimeManager& manager, double delta_time) {
     long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-    if (now - _last >= 250) {
+    if (now - _last >= 500) {
       std::cout << manager.get_entity_count() << "#, " << delta_time << "ms" << std::endl;
       _last = now;
-      count = ++_count;
     }
-    return [count]<ecs::DeferredManager Manager>(const Manager& manager) {
-      for (auto i{0}; i < count; ++i)
-        manager.spawn_entity(Transform{});
+  }
+private:
+  long long _last;
+};
+
+class SpawnSystem {
+public:
+  SpawnSystem() : _last(std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()) {}
+
+  auto operator()(const ecs::RuntimeManager& manager, double delta_time) {
+    bool spawn = false;
+    long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+    if (now - _last >= 5) {
+      _last = now;
+      spawn = true;
+    }
+    return [spawn]<ecs::DeferredManager Manager>(const Manager& manager) {
+      if (spawn) manager.spawn_entity(Transform{}, Lifetime{500});
     };
   }
 private:
-  size_t _count = 0;
   long long _last;
+};
+
+class LifetimeSystem {
+public:
+  auto operator()(ECS::Entity entity, Lifetime& lifetime, float delta_time) {
+    lifetime.millis_left -= delta_time;
+    bool kill = lifetime.millis_left <= 0;
+    return [entity, kill]<ecs::DeferredManager Manager>(const Manager& manager) {
+      if (kill) manager.remove_entity(entity);
+    };
+  }
 };
 
 int main() {
@@ -85,9 +112,11 @@ int main() {
 
   MoveRightSystem move_sys;
   ECS::Runtime tick(
-    RenderSystem(screen_surface),
     std::move(move_sys),
-    FrametimeSystem{}
+    FrametimeSystem{},
+    SpawnSystem{},
+    LifetimeSystem{},
+    RenderSystem(screen_surface)
   );
 
 

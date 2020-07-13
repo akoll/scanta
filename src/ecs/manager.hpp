@@ -13,6 +13,7 @@ public:
 template<typename TDeferredManager>
 concept DeferredManager = requires(TDeferredManager manager) {
    { manager.spawn_entity() };
+   // { manager.remove_entity() };
 };
 
 }

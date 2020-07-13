@@ -36,7 +36,8 @@ private:
 public:
   using Entity = size_t;
   struct EntityMetadata {
-      Signature signature;
+    Signature signature;
+    bool alive = true;
   };
 
   // TODO: REMOVE
@@ -68,6 +69,7 @@ public:
     ((get_component<std::decay_t<TComponents>>(entity) = std::forward<TComponents>(components)), ...);
   }
 
+  // TODO: return entity?
   void new_entity(auto&&... components) {
     ++_size;
     _entities.resize(_size);
@@ -75,6 +77,10 @@ public:
     set_components(_size - 1, std::forward<decltype(components)>(components)...);
   }
 
+  void remove_entity(Entity entity) {
+    // TODO: reclaim
+    _entities[entity].alive = false;
+  }
 
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
@@ -82,7 +88,7 @@ public:
       // TODO: static_assert component types handled
       constexpr Signature signature = signature_of<TRequiredComponents...>;
       for (size_t i{0}; i < _size; ++i) {
-        if ((_entities[i].signature & signature) == signature)
+        if (_entities[i].alive && (_entities[i].signature & signature) == signature)
         // TODO: call with manager (since this is sequential)
           callable(Entity{i});
       }
@@ -97,7 +103,7 @@ public:
       constexpr Signature signature = signature_of<TRequiredComponents...>;
       #pragma omp parallel for
       for (size_t i = 0; i < _size; ++i) {
-        if ((_entities[i].signature & signature) == signature)
+        if (_entities[i].alive && (_entities[i].signature & signature) == signature)
         // TODO: maybe a parallel manager?
           callable(Entity{i});
       }
