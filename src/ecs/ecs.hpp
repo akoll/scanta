@@ -9,7 +9,7 @@ namespace ecs {
 
 // Storage{TStorage}
 template<template<typename...> typename TStorage, template<template<typename...> typename, typename...> typename TRuntime>
-requires Storage<TStorage>
+requires CStorage<TStorage>
 class EntityComponentSystem {
 public:
   // The Entity handle type of TStorage needs to be known here for services to be definable.

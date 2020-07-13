@@ -7,24 +7,22 @@
 #include <boost/hana.hpp>
 #include <boost/hana/ext/std/tuple.hpp>
 
-#include "../info.hpp"
-#include "../storage/storage.hpp"
+#include "runtime.hpp"
 #include "../manager.hpp"
 
-#include "../util/callable_traits.hpp"
 #include "../util/timing/timer.hpp"
 
 namespace hana = boost::hana;
-using namespace hana::literals;
 
 namespace ecs::runtime {
 
 template<template<typename...> typename TStorage, typename... TSystems>
-requires Storage<TStorage>
-class Sequential {
+class Sequential : ecs::Runtime<TStorage, TSystems...> {
 public:
-  using Runtime = Sequential<TStorage, TSystems...>;
-  using Entity = typename TStorage<>::Entity;
+  using Runtime = ecs::Runtime<TStorage, TSystems...>;
+  using SequentialRuntime = Sequential<TStorage, TSystems...>;
+
+  using typename Runtime::Entity;
 
   // Systems are passed as references and stored in a runtime-owned tuple.
   Sequential(TSystems&&... systems) :
@@ -84,28 +82,27 @@ public:
   }
 
 private:
-  using Info = ecs::Info<Entity, TSystems...>;
+  using typename Runtime::Info;
 
   // Tuple to store references to the systems. (std::tuple instead of hana::tuple for std::get<> via type).
   std::tuple<std::decay_t<TSystems>...> _systems;
-  // The type of Storage used, determined by applying the associated component types as TStorage<...> template-parameters.
-  using Storage = typename decltype(hana::unpack(Info::components, hana::template_<TStorage>))::type;
-  Storage _storage;
+
+  using Runtime::_storage;
 
   class SequentialRuntimeManager : public virtual ecs::RuntimeManager {
   public:
-    SequentialRuntimeManager(Runtime& runtime) : _runtime(runtime) {}
+    SequentialRuntimeManager(SequentialRuntime& runtime) : _runtime(runtime) {}
 
     size_t get_entity_count() const override {
       return _runtime._storage.get_size();
     }
   protected:
-    Runtime& _runtime;
+    SequentialRuntime& _runtime;
   } _runtime_manager;
 
   class SequentialDeferredManager : public SequentialRuntimeManager {
   public:
-    SequentialDeferredManager(Runtime& runtime) : SequentialRuntimeManager(runtime) {}
+    SequentialDeferredManager(SequentialRuntime& runtime) : SequentialRuntimeManager(runtime) {}
 
     using SequentialRuntimeManager::get_entity_count;
 
