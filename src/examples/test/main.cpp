@@ -6,27 +6,33 @@
 
 #include "ecs/ecs.hpp"
 #include "ecs/manager.hpp"
-#include "ecs/storage/tuple_of_vectors.hpp"
+
+#include "ecs/storage/heap_smart.hpp"
 #include "ecs/runtime/sequential.hpp"
 
-using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
+using ECS = ecs::EntityComponentSystem<ecs::storage::SmartHeap, ecs::runtime::Sequential>;
 
 struct Transform {
   glm::vec3 pos;
+};
+
+struct Age {
+  float millis_live;
 };
 
 struct Lifetime {
   float millis_left;
 };
 
+
 class MoveRightSystem {
 public:
-  void operator()(ECS::Entity entity, float delta_time, Transform& transform) {
+  void operator()(ECS::Entity entity, float delta_time, Transform& transform, const Age& age) {
     transform.pos =  glm::mod(
       glm::vec3{
         // 320 + glm::sin(transform.pos.z + entity * 0.01) * 250,
-        320 + glm::sin(transform.pos.z + entity * (2.0 / 210)) * 170,
-        240 + glm::cos(transform.pos.z + entity * (2.0 / 420)) * 170,
+        320 + glm::sin(transform.pos.z + age.millis_live * (2.0 / 210)) * 170,
+        240 + glm::cos(transform.pos.z + age.millis_live * (2.0 / 420)) * 170,
         transform.pos.z - 0.001 * delta_time},
       glm::vec3{640, 480, 6.283}
     );
@@ -37,13 +43,13 @@ class RenderSystem {
 public:
   RenderSystem(SDL_Surface* surface) : _surface(surface) {}
 
-  void operator()(ECS::Entity entity, const Transform& transform, const Lifetime& lifetime) {
+  void operator()(ECS::Entity entity, const Transform& transform, const Age& age, const Lifetime& lifetime) {
     SDL_Rect rect{int(transform.pos.x - 2), int(transform.pos.y - 2), 4, 4};
     Uint8 col = std::max(lifetime.millis_left / 500 * 0xff, 0.0f);
     SDL_FillRect(_surface, &rect, SDL_MapRGB(_surface->format,
       (std::sin(transform.pos.z) + 1.0) * 0.5 * col,
-      (std::cos(entity / 30.0) + 1.0) * 0.5 * col,
-      (std::sin(entity / 30.0) + 1.0) * 0.5 * col
+      (std::cos(age.millis_live / 30.0) + 1.0) * 0.5 * col,
+      (std::sin(age.millis_live / 30.0) + 1.0) * 0.5 * col
     ));
   }
 private:
@@ -77,7 +83,7 @@ public:
       spawn = true;
     }
     return [spawn]<ecs::DeferredManager Manager>(const Manager& manager) {
-      if (spawn) manager.spawn_entity(Transform{}, Lifetime{500});
+      if (spawn) manager.spawn_entity(Transform{}, Lifetime{500}, Age{0});
     };
   }
 private:
@@ -86,8 +92,9 @@ private:
 
 class LifetimeSystem {
 public:
-  auto operator()(ECS::Entity entity, Lifetime& lifetime, float delta_time) {
+  auto operator()(ECS::Entity entity, Age& age, Lifetime& lifetime, float delta_time) {
     lifetime.millis_left -= delta_time;
+    age.millis_live += delta_time;
     bool kill = lifetime.millis_left <= 0;
     return [entity, kill]<ecs::DeferredManager Manager>(const Manager& manager) {
       if (kill) manager.remove_entity(entity);

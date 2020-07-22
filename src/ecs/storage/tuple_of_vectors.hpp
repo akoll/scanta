@@ -35,10 +35,6 @@ private:
   static constexpr Signature signature_of = (Signature(0) |= ... |= (Signature(1) << _component_index<TRequiredComponents>));
 public:
   using Entity = size_t;
-  struct EntityMetadata {
-    Signature signature;
-    bool alive = true;
-  };
 
   // TODO: REMOVE
   TupleOfVectors() {
@@ -111,6 +107,11 @@ public:
   }
 
 private:
+  struct EntityMetadata {
+    Signature signature;
+    bool alive = true;
+  };
+
   size_t _size = 0;
   std::vector<EntityMetadata> _entities;
   std::tuple<std::vector<TStoredComponents>...> _components;
