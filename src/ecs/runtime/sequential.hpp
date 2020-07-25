@@ -10,6 +10,7 @@
 #include "runtime.hpp"
 #include "../manager.hpp"
 
+#include "../info.hpp"
 #include "../util/timing/timer.hpp"
 
 namespace hana = boost::hana;
@@ -31,13 +32,24 @@ public:
     _deferred_manager(*this)
   {}
 
+  // Dispatch deferred operations.
+  inline void dispatch_deferred() {
+    for (auto& operation : _deferred_operations) operation(_deferred_manager);
+    _deferred_operations.clear();
+  }
+
   // Runs each system once.
   void operator()() {
     double delta_time = _timer.reset();
-    std::vector<std::function<void(const SequentialDeferredManager&)>> deferred;
     hana::for_each(_systems, [&](auto& system) {
-      using ReturnType = ct::return_type_t<decltype(system)>;
-      constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
+      using SystemType = std::decay_t<decltype(system)>;
+      using CallableType = decltype(&SystemType::SYSTEM_UPDATE_METHOD);
+      using ReturnType = ct::return_type_t<CallableType>;
+
+      // Lambda to call the system on a set of arguments.
+      auto call_system = hana::fuse([&](auto&&... args) { return system.SYSTEM_UPDATE_METHOD(args...); });
+
+      constexpr auto argtypes = hana::transform(argtypes_of<CallableType>, hana::traits::decay);
       constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes), Info::components);
       for_entities_with(component_argtypes, [&](Entity entity) {
         auto args = hana::transform(argtypes, [&](auto argtype) {
@@ -51,14 +63,13 @@ public:
             if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
               return std::reference_wrapper(std::get<ArgType>(_systems));
             } else {
-              // Use eval_if instead of constexpr if for conditional static_assert.
-              // TODO: use hana switch
               if constexpr (argtype == hana::type_c<Entity>) {
                 return std::reference_wrapper(entity);
               } else {
                 if constexpr (hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing) {
                   return delta_time;
                 } else {
+                  // Use eval_if instead of constexpr if for conditional static_assert.
                   return hana::eval_if(
                     argtype == hana::type_c<ecs::RuntimeManager>,
                     [&](auto _) { return _runtime_manager; },
@@ -71,14 +82,14 @@ public:
           }
         });
         if constexpr (std::is_invocable_v<ReturnType, const SequentialDeferredManager&>) {
-          deferred.push_back(hana::unpack(args, system));
+          _deferred_operations.push_back(call_system(args));
         } else {
           // Discard return value.
-          hana::unpack(args, system);
+          call_system(args);
         }
       });
     });
-    for (auto& operation : deferred) operation(_deferred_manager);
+    dispatch_deferred();
   }
 
 private:
@@ -117,8 +128,10 @@ private:
     using SequentialRuntimeManager::_runtime;
   } _deferred_manager;
 
-  // Timer for measuring frame times
-  // TODO: try average over time timer
+  // Container for deferred operations to be executed at a later time.
+  std::vector<std::function<void(const SequentialDeferredManager&)>> _deferred_operations;
+
+  // Timer for measuring frame times.
   timing::Timer _timer;
 
   // Helper class for easier hana::template_ unpacking.
