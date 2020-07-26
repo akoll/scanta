@@ -4,9 +4,6 @@
 #include "util/callable_traits.hpp"
 #include "manager.hpp"
 
-// System method names.
-#define SYSTEM_UPDATE_METHOD update
-
 namespace hana = boost::hana;
 
 namespace ecs {
@@ -20,7 +17,7 @@ struct Info {
   static constexpr auto components = hana::difference(
     hana::to_set(hana::transform(
       hana::flatten(
-        hana::make_tuple(to_hana_tuple_t<ct::args_t<decltype(&TSystems::SYSTEM_UPDATE_METHOD)>>...)
+        hana::make_tuple(to_hana_tuple_t<ct::args_t<decltype(&TSystems::operator())>>...)
       ),
       hana::traits::decay
     )),

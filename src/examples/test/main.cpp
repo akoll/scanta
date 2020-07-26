@@ -7,10 +7,10 @@
 #include "ecs/ecs.hpp"
 #include "ecs/manager.hpp"
 
-#include "ecs/storage/heap.hpp"
+#include "ecs/storage/heap_smart.hpp"
 #include "ecs/runtime/sequential.hpp"
 
-using ECS = ecs::EntityComponentSystem<ecs::storage::Heap, ecs::runtime::Sequential>;
+using ECS = ecs::EntityComponentSystem<ecs::storage::SmartHeap, ecs::runtime::Sequential>;
 
 struct Transform {
   glm::vec3 pos;
@@ -27,7 +27,7 @@ struct Lifetime {
 
 class MoveRightSystem {
 public:
-  void update(ECS::Entity entity, float delta_time, Transform& transform, const Age& age) {
+  void operator()(ECS::Entity entity, float delta_time, Transform& transform, const Age& age) {
     transform.pos =  glm::mod(
       glm::vec3{
         // 320 + glm::sin(transform.pos.z + entity * 0.01) * 250,
@@ -43,7 +43,7 @@ class RenderSystem {
 public:
   RenderSystem(SDL_Surface* surface) : _surface(surface) {}
 
-  void update(ECS::Entity entity, const Transform& transform, const Age& age, const Lifetime& lifetime) {
+  void operator()(ECS::Entity entity, const Transform& transform, const Age& age, const Lifetime& lifetime) {
     SDL_Rect rect{int(transform.pos.x - 2), int(transform.pos.y - 2), 4, 4};
     Uint8 col = std::max(lifetime.millis_left / 500 * 0xff, 0.0f);
     SDL_FillRect(_surface, &rect, SDL_MapRGB(_surface->format,
@@ -60,7 +60,7 @@ class FrametimeSystem {
 public:
   FrametimeSystem() : _last(std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()) {}
 
-  void update(const ecs::RuntimeManager& manager, double delta_time) {
+  void operator()(const ecs::RuntimeManager& manager, double delta_time) {
     long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
     if (now - _last >= 500) {
       std::cout << manager.get_entity_count() << "#, " << delta_time << "ms" << std::endl;
@@ -75,7 +75,7 @@ class SpawnSystem {
 public:
   SpawnSystem() : _last(std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()) {}
 
-  auto update(const ecs::RuntimeManager& manager, double delta_time) {
+  auto operator()(const ecs::RuntimeManager& manager, double delta_time) {
     bool spawn = false;
     long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
     if (now - _last >= 5) {
@@ -92,7 +92,7 @@ private:
 
 class LifetimeSystem {
 public:
-  auto update(ECS::Entity entity, Age& age, Lifetime& lifetime, float delta_time) {
+  auto operator()(ECS::Entity entity, Age& age, Lifetime& lifetime, float delta_time) {
     lifetime.millis_left -= delta_time;
     age.millis_live += delta_time;
     bool kill = lifetime.millis_left <= 0;

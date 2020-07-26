@@ -80,26 +80,30 @@ public:
 
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
-    // TODO: static_assert component types handled
-    constexpr Signature signature = signature_of<TRequiredComponents...>;
-    for (size_t i{0}; i < _size; ++i) {
-      if (_entities[i].alive && (_entities[i].signature & signature) == signature)
-      // TODO: call with manager (since this is sequential)
-        callable(Entity{i});
-    }
+    if constexpr(sizeof...(TRequiredComponents) > 0) {
+      // TODO: static_assert component types handled
+      constexpr Signature signature = signature_of<TRequiredComponents...>;
+      for (size_t i{0}; i < _size; ++i) {
+        if (_entities[i].alive && (_entities[i].signature & signature) == signature)
+        // TODO: call with manager (since this is sequential)
+          callable(Entity{i});
+      }
+    } else callable(Entity{0}); // TODO: move check to runtime to avoid 0-reservation
   }
 
   // TODO: parametrize parallelization
   template<typename... TRequiredComponents>
   void for_entities_with_parallel(auto callable) {
-    // TODO: static_assert component types handled
-    constexpr Signature signature = signature_of<TRequiredComponents...>;
-    #pragma omp parallel for
-    for (size_t i = 0; i < _size; ++i) {
-      if (_entities[i].alive && (_entities[i].signature & signature) == signature)
-      // TODO: maybe a parallel manager?
-        callable(Entity{i});
-    }
+    if constexpr(sizeof...(TRequiredComponents) > 0) {
+      // TODO: static_assert component types handled
+      constexpr Signature signature = signature_of<TRequiredComponents...>;
+      #pragma omp parallel for
+      for (size_t i = 0; i < _size; ++i) {
+        if (_entities[i].alive && (_entities[i].signature & signature) == signature)
+        // TODO: maybe a parallel manager?
+          callable(Entity{i});
+      }
+    } else callable(Entity{0}); // TODO: move check to runtime
   }
 
 private:

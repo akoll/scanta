@@ -10,7 +10,7 @@ namespace hana = boost::hana;
 
 // Get the argument types of some callable as a hana::tuple_t.
 template<typename T>
-static constexpr auto argtypes_of = hana::drop_front(to_hana_tuple_t<ct::args_t<T>>);
+static constexpr auto argtypes_of = to_hana_tuple_t<ct::args_t<T>>;
 
 // Get the type of operator() on some template parameters.
 template<typename... Ps>
