@@ -9,11 +9,4 @@ public:
   virtual size_t get_entity_count() const = 0;
 };
 
-// Manager concept for deferred operations.
-template<typename TDeferredManager>
-concept DeferredManager = requires(TDeferredManager manager) {
-   { manager.new_entity() };
-   // { manager.remove_entity() };
-};
-
 }

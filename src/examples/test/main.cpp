@@ -82,7 +82,7 @@ public:
       _last = now;
       spawn = true;
     }
-    return [spawn]<ecs::DeferredManager Manager>(const Manager& manager) {
+    return [spawn](const auto& manager) {
       if (spawn) manager.new_entity(Transform{}, Lifetime{500}, Age{0});
     };
   }
@@ -96,7 +96,7 @@ public:
     lifetime.millis_left -= delta_time;
     age.millis_live += delta_time;
     bool kill = lifetime.millis_left <= 0;
-    return [entity, kill]<ecs::DeferredManager Manager>(const Manager& manager) {
+    return [entity, kill](const auto& manager) {
       if (kill) manager.remove_entity(entity);
     };
   }
