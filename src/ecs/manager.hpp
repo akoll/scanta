@@ -12,7 +12,7 @@ public:
 // Manager concept for deferred operations.
 template<typename TDeferredManager>
 concept DeferredManager = requires(TDeferredManager manager) {
-   { manager.spawn_entity() };
+   { manager.new_entity() };
    // { manager.remove_entity() };
 };
 

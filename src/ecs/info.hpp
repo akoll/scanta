@@ -15,7 +15,7 @@ namespace ecs {
 namespace internal {
   template<typename TSystem>
   concept HasStart = requires(TSystem system) {
-    { system.start() };
+    { system.SYSTEM_START_METHOD };
   };
 }
 

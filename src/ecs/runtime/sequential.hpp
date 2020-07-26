@@ -119,7 +119,7 @@ private:
 
     using SequentialRuntimeManager::get_entity_count;
 
-    void spawn_entity(auto&&... components) const {
+    void new_entity(auto&&... components) const {
       _runtime._storage.new_entity(std::forward<decltype(components)>(components)...);
     }
 
