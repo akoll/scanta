@@ -30,12 +30,14 @@ public:
     _systems(std::make_tuple(std::forward<TSystems>(systems)...)),
     _runtime_manager(*this),
     _deferred_manager(*this)
-  {}
-
-  // Dispatch deferred operations.
-  inline void dispatch_deferred() {
-    for (auto& operation : _deferred_operations) operation(_deferred_manager);
-    _deferred_operations.clear();
+  {
+    // Call start method on all systems that implement it.
+    hana::for_each(_systems, [&](auto& system) {
+      if constexpr (SystemInfo<decltype(system)>::has_start) {
+        // TODO: pass in deferred manager
+        system.SYSTEM_START_METHOD();
+      }
+    });
   }
 
   // Runs each system once.
@@ -46,8 +48,8 @@ public:
       using CallableType = decltype(&SystemType::SYSTEM_UPDATE_METHOD);
       using ReturnType = ct::return_type_t<CallableType>;
 
-      // Lambda to call the system on a set of arguments.
-      auto call_system = hana::fuse([&](auto&&... args) { return system.SYSTEM_UPDATE_METHOD(args...); });
+      // Lambda to call the system update on a set of arguments.
+      auto call_update = hana::fuse([&](auto&&... args) { return system.SYSTEM_UPDATE_METHOD(args...); });
 
       constexpr auto argtypes = hana::transform(argtypes_of<CallableType>, hana::traits::decay);
       constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes), Info::components);
@@ -76,16 +78,16 @@ public:
                     [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
                   );
                 }
-
               }
             }
           }
         });
+
         if constexpr (std::is_invocable_v<ReturnType, const SequentialDeferredManager&>) {
-          _deferred_operations.push_back(call_system(args));
+          _deferred_operations.push_back(call_update(args));
         } else {
           // Discard return value.
-          call_system(args);
+          call_update(args);
         }
       });
     });
@@ -130,6 +132,12 @@ private:
 
   // Container for deferred operations to be executed at a later time.
   std::vector<std::function<void(const SequentialDeferredManager&)>> _deferred_operations;
+
+  // Dispatch deferred operations.
+  inline void dispatch_deferred() {
+    for (auto& operation : _deferred_operations) operation(_deferred_manager);
+    _deferred_operations.clear();
+  }
 
   // Timer for measuring frame times.
   timing::Timer _timer;

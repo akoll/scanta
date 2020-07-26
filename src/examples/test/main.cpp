@@ -75,6 +75,10 @@ class SpawnSystem {
 public:
   SpawnSystem() : _last(std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()) {}
 
+  void start() {
+    std::cout << "Spawn system started!" << std::endl;
+  }
+
   auto update(const ecs::RuntimeManager& manager, double delta_time) {
     bool spawn = false;
     long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
