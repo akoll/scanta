@@ -17,7 +17,7 @@ struct Info {
   static constexpr auto components = hana::difference(
     hana::to_set(hana::transform(
       hana::flatten(
-        hana::make_tuple(to_hana_tuple_t<ct::args_t<decltype(&TSystems::operator())>>...)
+        hana::make_tuple(to_hana_tuple_t<ct::args_t<TSystems>>...)
       ),
       hana::traits::decay
     )),
