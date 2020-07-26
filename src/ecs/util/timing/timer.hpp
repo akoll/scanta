@@ -31,7 +31,7 @@ public:
     auto last = std::chrono::time_point_cast<std::chrono::nanoseconds>(_last).time_since_epoch().count();
     _last = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::time_point_cast<std::chrono::nanoseconds>(_last).time_since_epoch().count() - last;
-    return elapsed * 0.000001;
+    return elapsed * 0.000000001;
   }
 private:
   // TODO: benchmark usage of nanos since epoch here (to avoid time_point_cast)
