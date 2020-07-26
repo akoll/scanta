@@ -65,7 +65,6 @@ public:
                     [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
                   );
                 }
-
               }
             }
           }
