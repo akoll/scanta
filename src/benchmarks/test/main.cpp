@@ -3,15 +3,12 @@
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 #include <chrono>
-#include <thread>
 
 #include "ecs/ecs.hpp"
 #include "ecs/manager.hpp"
 
 #include "ecs/storage/tuple_of_vectors.hpp"
 #include "ecs/runtime/sequential.hpp"
-
-using namespace std::chrono_literals;
 
 using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
 
@@ -114,8 +111,6 @@ int main() {
     return 1;
   }
   screen_surface = SDL_GetWindowSurface(window);
-
-  std::this_thread::sleep_for(1s);
 
   MoveRightSystem move_sys;
   ECS::Runtime tick(

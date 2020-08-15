@@ -10,7 +10,7 @@ default: main.out
 run: main.out
 	./main.out
 graph: main.out
-	./main.out | python bench2tex.py
+	./main.out | python ../bench2tex.py
 clean:
 	rm -rf *.out *.d
 
