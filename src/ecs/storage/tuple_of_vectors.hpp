@@ -40,9 +40,10 @@ public:
   TupleOfVectors() {
     static constexpr auto count = 0;
     _entities.resize(count);
-    ((std::get<std::vector<TStoredComponents>>(_components).resize(count), 0), ...);
-    for (Entity entity{0}; entity < count; ++entity)
-      set_components(entity, TStoredComponents{}...);
+    (std::get<std::vector<TStoredComponents>>(_components).resize(count), ...);
+    // TODO: remove
+    // for (Entity entity{0}; entity < count; ++entity)
+    //   set_components(entity, TStoredComponents{}...);
     _size = count;
   }
 
