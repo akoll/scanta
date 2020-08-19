@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/hana.hpp>
-#include "util/callable_traits.hpp"
+#include "../util/callable_traits.hpp"
 #include "manager.hpp"
 
 namespace hana = boost::hana;

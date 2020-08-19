@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../info.hpp"
-#include "../storage/storage.hpp"
+#include "info.hpp"
+#include "storage.hpp"
 
 namespace ecs {
 

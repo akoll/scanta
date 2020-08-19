@@ -3,7 +3,7 @@
 #include <utility>
 #include <functional>
 
-#include "storage/storage.hpp"
+#include "storage.hpp"
 
 namespace ecs {
 

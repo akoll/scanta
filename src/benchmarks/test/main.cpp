@@ -4,8 +4,8 @@
 #include <glm/glm.hpp>
 #include <chrono>
 
-#include "ecs/ecs.hpp"
-#include "ecs/manager.hpp"
+#include "ecs/scaffold/ecs.hpp"
+#include "ecs/scaffold/manager.hpp"
 
 #include "ecs/storage/tuple_of_vectors.hpp"
 #include "ecs/runtime/sequential.hpp"
