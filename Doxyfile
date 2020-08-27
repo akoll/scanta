@@ -2,7 +2,7 @@
 
 PROJECT_NAME = "Entity-Component-System"
 PROJECT_NUMBER =
-PROJECT_BRIEF = "Highly-configurable header-only C++ Entity-Component-System library."
+PROJECT_BRIEF = "Configurable header-only Entity-Component-System library."
 PROJECT_LOGO =
 
 OUTPUT_DIRECTORY = doc

@@ -1,5 +1,5 @@
 # Entity-Component-System
-> Highly-configurable header-only C++ Entity-Component-System library.
+> Configurable header-only Entity-Component-System library.
 
 ## Dependencies
 For compiling ecs headers:
