@@ -12,9 +12,13 @@ using namespace hana::literals;
 
 namespace ecs::storage {
 
+// Base declaration for partial specialization.
 template<typename... TStoredComponents>
 class Heap;
 
+// Partial specialization for the case of no stored components.
+// This is required because an entity handle type needs to be exposed
+// to the scaffold before the list of stored components is known.
 template<>
 class Heap<> {
 public:
