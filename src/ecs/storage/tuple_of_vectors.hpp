@@ -12,6 +12,12 @@ using namespace hana::literals;
 
 namespace ecs::storage {
 
+/// Stores components in multiple equally-sized vectors.
+///
+/// For each stored component type there is exactly one vector.
+/// All vectors are always of equal size, and always at least as long as the number of entities stored.
+///
+/// @tparam TStoredComponents The component types to be stored.
 template<typename... TStoredComponents>
 class TupleOfVectors {
 private:
@@ -34,9 +40,11 @@ private:
   template<typename... TRequiredComponents>
   static constexpr Signature signature_of = (Signature(0) |= ... |= (Signature(1) << _component_index<TRequiredComponents>));
 public:
+  /// The handle type for systems to reference entities with.
   using Entity = size_t;
 
   // TODO: REMOVE
+  /// Constructs a storage with no components initially stored.
   TupleOfVectors() {
     static constexpr auto count = 0;
     _entities.resize(count);
@@ -47,14 +55,22 @@ public:
     _size = count;
   }
 
+  /// Returns the number of entities currently stored.
+  ///
+  /// @returns The number of entities currently stored.
+  size_t get_size() {
+    return _size;
+  }
+
+  /// Returns a reference to a single component of some entity.
+  ///
+  /// @param entity The entity to be accessed.
+  /// @tparam TComponent The component type to be queried.
+  /// @throws std::runtime_error when the queried component is not active on the entity.
   template<typename TComponent>
   TComponent& get_component(Entity entity) {
     // TODO: static_assert component type handled
     return std::get<std::vector<TComponent>>(_components)[entity];
-  }
-
-  size_t get_size() {
-    return _size;
   }
 
   template<typename... TComponents>
