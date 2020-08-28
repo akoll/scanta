@@ -93,7 +93,7 @@ public:
 
   void remove_entity(Entity entity) {
     // TODO: reclaim
-    _entities[entity].alive = false;
+    _entities[entity].active = false;
     // --_size;
   }
 
@@ -130,7 +130,7 @@ public:
   void print(std::ostream& stream) const {
     for (auto i{0u}; i < _capacity; ++i) {
       auto& entity{_entities[i]};
-      stream << (entity.alive ? "E" : "_");
+      stream << (entity.active ? "E" : "_");
     }
     stream << std::endl;
   }
@@ -142,7 +142,7 @@ public:
 private:
   struct EntityMetadata {
     Signature signature;
-    bool alive = true;
+    bool active = true;
   };
 
   /// The number of entitites that memory is allocated for in the vectors.
@@ -163,18 +163,18 @@ private:
     while (true) {
         while (true) {
             if (it_inactive > it_active) return it_inactive;
-            if (!_entities[it_inactive].alive) break;
+            if (!_entities[it_inactive].active) break;
             it_inactive++;
         }
         while(true) {
-            if (_entities[it_active].alive) break;
+            if (_entities[it_active].active) break;
             // TODO: Update handles.
             // invalidateEntityHandle(it_active);
             if (it_active <= it_inactive) return it_inactive;
             it_active--;
         }
-        assert(_entities[it_active].alive);
-        assert(!_entities[it_inactive].alive);
+        assert(_entities[it_active].active);
+        assert(!_entities[it_inactive].active);
 
         std::swap(_entities[it_active], _entities[it_inactive]);
         (([&]() {
