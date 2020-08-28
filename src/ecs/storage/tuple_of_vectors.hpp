@@ -47,7 +47,7 @@ public:
   /// Constructs a storage with no components initially stored.
   ///
   /// @param capacity The initial entity capacity for which to allocate memory for.
-  TupleOfVectors(size_t capacity = 128) {
+  TupleOfVectors(size_t capacity = 32) {
     grow_to(capacity);
   }
 
@@ -80,9 +80,11 @@ public:
 
   // TODO: return entity?
   void new_entity(auto&&... components) {
-    grow_to(_capacity + 1);
-    set_components(_capacity - 1, std::forward<decltype(components)>(components)...);
-    // ++_size;
+    if (_size >= _capacity) grow_to(_capacity * 2);
+    assert(!_entities[_size].active);
+    _entities[_size].active = true;
+    set_components(_size, std::forward<decltype(components)>(components)...);
+    ++_size;
   }
 
   void remove_entity(Entity entity) {
@@ -136,7 +138,7 @@ public:
 private:
   struct EntityMetadata {
     Signature signature;
-    bool active = true;
+    bool active = false;
   };
 
   /// The number of entitites that memory is allocated for in the vectors.
