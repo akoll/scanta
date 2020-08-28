@@ -172,10 +172,10 @@ private:
 
         std::swap(_entities[it_active], _entities[it_inactive]);
         // TODO: explain fold-expr
-        (([&]() {
+        ([&]() {
           auto& component_vector = std::get<std::vector<TStoredComponents>>(_components);
           std::swap(component_vector[it_active], component_vector[it_inactive]);
-        }(), 0), ...);
+        }(), ...);
 
         // TODO: Update handles.
         // refreshEntityHandle(it_inactive);
