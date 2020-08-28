@@ -101,7 +101,8 @@ public:
       // TODO: static_assert component types handled
       constexpr Signature signature = signature_of<TRequiredComponents...>;
       for (size_t i{0}; i < _size; ++i) {
-        if (_entities[i].alive && (_entities[i].signature & signature) == signature)
+        // TODO: explain this (shuffling)
+        if ((_entities[i].signature & signature) == signature)
         // TODO: call with manager (since this is sequential)
           callable(Entity{i});
       }
@@ -116,12 +117,58 @@ public:
       constexpr Signature signature = signature_of<TRequiredComponents...>;
       #pragma omp parallel for
       for (size_t i = 0; i < _size; ++i) {
-        if (_entities[i].alive && (_entities[i].signature & signature) == signature)
+        if ((_entities[i].signature & signature) == signature)
         // TODO: maybe a parallel manager?
           callable(Entity{i});
       }
     } else callable(Entity{0}); // TODO: move check to runtime
   }
+
+  void print(std::ostream& stream) const {
+    for (auto i{0u}; i < _size; ++i) {
+      auto& entity{_entities[i]};
+      stream << (entity.alive ? "E" : "_");
+    }
+    stream << std::endl;
+  }
+
+  auto refresh() {
+    Entity it_inactive{0};
+    Entity it_active{_size - 1};
+
+    while (true) {
+        while (true) {
+            if (it_inactive > it_active) return it_inactive;
+            if (!_entities[it_inactive].alive) break;
+            it_inactive++;
+        }
+        while(true) {
+            if (_entities[it_active].alive) break;
+            // TODO: Update handles.
+            // invalidateEntityHandle(it_active);
+            if (it_active <= it_inactive) return it_inactive;
+            it_active--;
+        }
+        assert(_entities[it_active].alive);
+        assert(!_entities[it_inactive].alive);
+
+        std::swap(_entities[it_active], _entities[it_inactive]);
+        (([&]() {
+          auto& component_vector = std::get<std::vector<TStoredComponents>>(_components);
+          std::swap(component_vector[it_active], component_vector[it_inactive]);
+        }(), 0), ...);
+
+        // TODO: Update handles.
+        // refreshEntityHandle(it_inactive);
+        // invalidateEntityHandle(it_active);
+        // refreshEntityHandle(it_active);
+
+        it_inactive++;
+        it_active--;
+    }
+    return it_inactive;
+}
+
 
 private:
   struct EntityMetadata {

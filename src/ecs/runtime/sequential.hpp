@@ -77,7 +77,11 @@ public:
         }
       });
     });
+
     for (auto& operation : deferred) operation(_deferred_manager);
+
+    // TODO: Is this necessary every frame? Is this necessary for every storage? Sfinae if not defined.
+    _storage.refresh();
   }
 
 private:
