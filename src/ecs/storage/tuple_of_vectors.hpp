@@ -52,14 +52,14 @@ public:
     // TODO: remove
     // for (Entity entity{0}; entity < count; ++entity)
     //   set_components(entity, TStoredComponents{}...);
-    _size = count;
+    _capacity = count;
   }
 
   /// Returns the number of entities currently stored.
   ///
   /// @returns The number of entities currently stored.
   size_t get_size() {
-    return _size;
+    return _capacity;
   }
 
   /// Returns a reference to a single component of some entity.
@@ -84,10 +84,10 @@ public:
 
   // TODO: return entity?
   void new_entity(auto&&... components) {
-    ++_size;
-    _entities.resize(_size);
-    ((std::get<std::vector<TStoredComponents>>(_components).resize(_size), 0), ...);
-    set_components(_size - 1, std::forward<decltype(components)>(components)...);
+    ++_capacity;
+    _entities.resize(_capacity);
+    ((std::get<std::vector<TStoredComponents>>(_components).resize(_capacity), 0), ...);
+    set_components(_capacity - 1, std::forward<decltype(components)>(components)...);
   }
 
   void remove_entity(Entity entity) {
@@ -95,13 +95,14 @@ public:
     _entities[entity].alive = false;
   }
 
+  /// ...
+  /// @requires No inactive entity to exist with an index smaller than the highest active one.
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
     if constexpr(sizeof...(TRequiredComponents) > 0) {
       // TODO: static_assert component types handled
       constexpr Signature signature = signature_of<TRequiredComponents...>;
-      for (size_t i{0}; i < _size; ++i) {
-        // TODO: explain this (shuffling)
+      for (size_t i{0}; i < _capacity; ++i) {
         if ((_entities[i].signature & signature) == signature)
         // TODO: call with manager (since this is sequential)
           callable(Entity{i});
@@ -116,7 +117,7 @@ public:
       // TODO: static_assert component types handled
       constexpr Signature signature = signature_of<TRequiredComponents...>;
       #pragma omp parallel for
-      for (size_t i = 0; i < _size; ++i) {
+      for (size_t i = 0; i < _capacity; ++i) {
         if ((_entities[i].signature & signature) == signature)
         // TODO: maybe a parallel manager?
           callable(Entity{i});
@@ -125,16 +126,18 @@ public:
   }
 
   void print(std::ostream& stream) const {
-    for (auto i{0u}; i < _size; ++i) {
+    for (auto i{0u}; i < _capacity; ++i) {
       auto& entity{_entities[i]};
       stream << (entity.alive ? "E" : "_");
     }
     stream << std::endl;
   }
 
+  /// ...
+  /// After refreshing, no inactive entity lies before an active one in the vectors.
   auto refresh() {
     Entity it_inactive{0};
-    Entity it_active{_size - 1};
+    Entity it_active{_capacity - 1};
 
     while (true) {
         while (true) {
@@ -176,7 +179,12 @@ private:
     bool alive = true;
   };
 
+  /// The number of entitites that memory is allocated for in the vectors.
+  /// This includes inactive entitites.
+  size_t _capacity = 0;
+  /// The number of stored entitites that are active.
   size_t _size = 0;
+
   std::vector<EntityMetadata> _entities;
   std::tuple<std::vector<TStoredComponents>...> _components;
 };
