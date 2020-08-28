@@ -88,11 +88,13 @@ public:
     _entities.resize(_capacity);
     ((std::get<std::vector<TStoredComponents>>(_components).resize(_capacity), 0), ...);
     set_components(_capacity - 1, std::forward<decltype(components)>(components)...);
+    // ++_size;
   }
 
   void remove_entity(Entity entity) {
     // TODO: reclaim
     _entities[entity].alive = false;
+    // --_size;
   }
 
   /// ...
@@ -102,7 +104,7 @@ public:
     if constexpr(sizeof...(TRequiredComponents) > 0) {
       // TODO: static_assert component types handled
       constexpr Signature signature = signature_of<TRequiredComponents...>;
-      for (size_t i{0}; i < _capacity; ++i) {
+      for (size_t i{0}; i < _size; ++i) {
         if ((_entities[i].signature & signature) == signature)
         // TODO: call with manager (since this is sequential)
           callable(Entity{i});
@@ -117,7 +119,7 @@ public:
       // TODO: static_assert component types handled
       constexpr Signature signature = signature_of<TRequiredComponents...>;
       #pragma omp parallel for
-      for (size_t i = 0; i < _capacity; ++i) {
+      for (size_t i = 0; i < _size; ++i) {
         if ((_entities[i].signature & signature) == signature)
         // TODO: maybe a parallel manager?
           callable(Entity{i});
@@ -133,9 +135,28 @@ public:
     stream << std::endl;
   }
 
-  /// ...
-  /// After refreshing, no inactive entity lies before an active one in the vectors.
   auto refresh() {
+    return _size = shuffle();
+  }
+
+private:
+  struct EntityMetadata {
+    Signature signature;
+    bool alive = true;
+  };
+
+  /// The number of entitites that memory is allocated for in the vectors.
+  /// This includes inactive entitites.
+  size_t _capacity = 0;
+  /// The number of consecutive entitites (from the beginning) that are active.
+  size_t _size = 0;
+
+  std::vector<EntityMetadata> _entities;
+  std::tuple<std::vector<TStoredComponents>...> _components;
+
+  /// ...
+  /// After shuffling, no inactive entity lies before an active one in the vectors.
+  auto shuffle() {
     Entity it_inactive{0};
     Entity it_active{_capacity - 1};
 
@@ -170,23 +191,7 @@ public:
         it_active--;
     }
     return it_inactive;
-}
-
-
-private:
-  struct EntityMetadata {
-    Signature signature;
-    bool alive = true;
-  };
-
-  /// The number of entitites that memory is allocated for in the vectors.
-  /// This includes inactive entitites.
-  size_t _capacity = 0;
-  /// The number of stored entitites that are active.
-  size_t _size = 0;
-
-  std::vector<EntityMetadata> _entities;
-  std::tuple<std::vector<TStoredComponents>...> _components;
+  }
 };
 
 }
