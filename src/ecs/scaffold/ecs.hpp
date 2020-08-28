@@ -5,6 +5,7 @@
 
 #include "storage.hpp"
 
+/// Namespace containing the ecs library.
 namespace ecs {
 
 // Storage{TStorage}
@@ -41,7 +42,12 @@ public:
   // However, clang supports it (see https://bugs.llvm.org/show_bug.cgi?id=34520).
   template<typename... TSystems>
   Runtime(TSystems&&...) -> Runtime<TSystems...>;
-
 };
+
+/// Namespace containing all runtime options which are shipped by default.
+namespace runtime {}
+
+/// Namespace containing all storage options which are shipped by default.
+namespace storage {}
 
 }

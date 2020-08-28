@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 
+/// Namespace for anything related to gathering non-functional metrics.
 namespace benchmark {
 
 class Timer {
@@ -21,6 +22,7 @@ private:
 
 }
 
+/// Namespace for anything related to gathering time-behavioral metrics.
 namespace timing {
 
 class Timer {
