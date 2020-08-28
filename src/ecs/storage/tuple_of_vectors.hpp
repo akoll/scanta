@@ -45,21 +45,17 @@ public:
 
   // TODO: REMOVE
   /// Constructs a storage with no components initially stored.
-  TupleOfVectors() {
-    static constexpr auto count = 0;
-    _entities.resize(count);
-    (std::get<std::vector<TStoredComponents>>(_components).resize(count), ...);
-    // TODO: remove
-    // for (Entity entity{0}; entity < count; ++entity)
-    //   set_components(entity, TStoredComponents{}...);
-    _capacity = count;
+  ///
+  /// @param capacity The initial entity capacity for which to allocate memory for.
+  TupleOfVectors(size_t capacity = 128) {
+    grow_to(capacity);
   }
 
-  /// Returns the number of entities currently stored.
+  /// Returns the number of active entities currently stored.
   ///
-  /// @returns The number of entities currently stored.
+  /// @returns The number of active entities currently stored.
   size_t get_size() {
-    return _capacity;
+    return _size;
   }
 
   /// Returns a reference to a single component of some entity.
@@ -84,9 +80,7 @@ public:
 
   // TODO: return entity?
   void new_entity(auto&&... components) {
-    ++_capacity;
-    _entities.resize(_capacity);
-    ((std::get<std::vector<TStoredComponents>>(_components).resize(_capacity), 0), ...);
+    grow_to(_capacity + 1);
     set_components(_capacity - 1, std::forward<decltype(components)>(components)...);
     // ++_size;
   }
@@ -177,6 +171,7 @@ private:
         assert(!_entities[it_inactive].active);
 
         std::swap(_entities[it_active], _entities[it_inactive]);
+        // TODO: explain fold-expr
         (([&]() {
           auto& component_vector = std::get<std::vector<TStoredComponents>>(_components);
           std::swap(component_vector[it_active], component_vector[it_inactive]);
@@ -191,6 +186,13 @@ private:
         it_active--;
     }
     return it_inactive;
+  }
+
+  void grow_to(size_t capacity) {
+    _entities.resize(capacity);
+    // TODO: explain fold-expr
+    (std::get<std::vector<TStoredComponents>>(_components).resize(capacity), ...);
+    _capacity = capacity;
   }
 };
 
