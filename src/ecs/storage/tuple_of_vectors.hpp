@@ -151,6 +151,7 @@ public:
     /// The `_size` field is not decreased here to allow for `new_entity` to use a predictable entity slot
     /// for creation of new entities. Otherwise, removing an entity that is not at index `_size - 1` would
     /// invalidate `new_entity`'s precondition of the `_size` slot being inactive.
+    /// This means that `_size` is merely an upper bound.
   }
 
   /// Execute a callable on each entity with all required components enabled.
