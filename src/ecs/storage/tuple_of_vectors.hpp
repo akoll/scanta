@@ -129,7 +129,7 @@ public:
   /// @param components The set of components to be initially enabled on the new entity.
   void new_entity(auto&&... components) {
     // Grow exponentially if needed.
-    if (_size >= _capacity) grow_to(_capacity * 2);
+    if (_size >= _entities.size()) grow_to(_entities.size() * 2);
     // The new entity is to be inactive (because more storage is allocated than occupied by active entities).
     // Because removing entities will not decrease `_size` and after shuffling exactly the first `_size`
     // stored entities are active, the entity at slot `_size` is always inactive.
@@ -193,7 +193,7 @@ public:
 
   // TODO: Remove this function (it's just for debugging purposes).
   void print(std::ostream& stream) const {
-    for (auto i{0u}; i < _capacity; ++i) {
+    for (auto i{0u}; i < _entities.size(); ++i) {
       auto& entity{_entities[i]};
       stream << (entity.active ? "E" : "_");
     }
@@ -220,11 +220,6 @@ private:
     bool active = false;
   };
 
-  /// The number of entitites that memory is allocated for in the vectors.
-  ///
-  /// This includes inactive entitites.
-  /// This field is just for convenience, since the capacity could also be derived at any time from the size of any of the vectors.
-  size_t _capacity = 0;
   /// An upper bound for the number of stored entities currently active.
   ///
   /// Directly after shuffling, the number of consecutive entitites (from the beginning) that are active.
@@ -234,12 +229,12 @@ private:
 
   /// Vector storing the entity metadata.
   ///
-  /// Always has a size of `_capacity`.
+  /// Always has the same size as all the component data vectors.
   std::vector<EntityMetadata> _entities;
   /// The vectors storing component data, arranged in a tuple.
   ///
   /// For each stored component type, there is one vector storing instances of it.
-  /// All vectors always have a size of `_capacity`.
+  /// All vectors always have the same size, equal to the size of the metadata vector.
   std::tuple<std::vector<TStoredComponents>...> _components;
 
   /// Rearrange entity metadata and component data to have all active entities packed sequentially.
@@ -259,8 +254,8 @@ private:
 
     // Start out at index 0 (first element / left).
     Entity it_inactive{0};
-    // Start out at index `_capacity - 1` (last element / right).
-    Entity it_active{_capacity - 1};
+    // Start out at index `_entities.size() - 1` (last element / right).
+    Entity it_active{_entities.size() - 1};
 
     // Loop indefinetely. Return conditions are given by the iterators crossing over.
     while (true) {
@@ -320,8 +315,6 @@ private:
     _entities.resize(capacity);
     // Resize component data vectors using a fold expression.
     (std::get<std::vector<TStoredComponents>>(_components).resize(capacity), ...);
-    // Save the new capacity.
-    _capacity = capacity;
   }
 };
 
