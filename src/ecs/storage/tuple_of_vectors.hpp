@@ -34,9 +34,9 @@ private:
   /// A bitset with a single bit for each component type.
   using Signature = Bitset2::bitset2<sizeof...(TStoredComponents)>;
 
-  /// Field for accessing the index of component types within the list of stored component types.
+  /// Field for accessing the index of a component type within the list of stored component types.
   ///
-  /// @tparam TComponent the component type to access the index of.
+  /// @tparam TComponent The component type to access the index of.
   template<typename TComponent>
   static constexpr size_t _component_index = type_index<TComponent, TStoredComponents...>;
 
