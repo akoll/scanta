@@ -7,10 +7,10 @@
 #include <boost/hana.hpp>
 #include <boost/hana/ext/std/tuple.hpp>
 
-#include "../scaffold/runtime.hpp"
-#include "../scaffold/manager.hpp"
+#include "ecs/scaffold/runtime.hpp"
+#include "ecs/scaffold/manager.hpp"
 
-#include "../util/timer.hpp"
+#include "ecs/util/timer.hpp"
 
 namespace hana = boost::hana;
 
