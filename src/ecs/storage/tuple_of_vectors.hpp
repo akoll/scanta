@@ -223,7 +223,7 @@ private:
 
   /// An upper bound for the number of stored entities currently active.
   ///
-  /// Directly after shuffling, the number of consecutive entitites (from the beginning) that are active.
+  /// Directly after shuffling, it is the number of consecutive entitites (from the beginning) that are active.
   /// This field may run out of sync, notably by removing an entity.
   /// Executing `refresh` or `shuffle` will restore the size to be exact again.
   size_t _size = 0;
