@@ -34,7 +34,7 @@ constexpr auto find_component_index() {
 /// The index of the first instance of a type in a variadic list of types.
 ///
 /// Compilation will fail if the type is not in the list.
-template<typename T, typename... Ts>
 /// @tparam T The type to be searched.
 /// @tparam Ts The list of types to be searched in.
+template<typename T, typename... Ts>
 constexpr size_t type_index = internal::find_component_index<T, Ts...>();
