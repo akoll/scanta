@@ -157,7 +157,7 @@ public:
   ///
   /// Requires no inactive entity to exist with an index smaller than the highest active one.
   /// @tparam TRequiredComponents The set of component types required to be enabled for an entity to be processed.
-  /// @param callable The callable to be executed with each matched entity's handle as an argument.
+  /// @param callable The callable to be executed with each matched entity's index as an argument.
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
     /// If the list of required component types is empty, the callable is called exactly once.
