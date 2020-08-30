@@ -10,6 +10,8 @@
 namespace hana = boost::hana;
 using namespace hana::literals;
 
+#include "ecs/util/type_index.hpp"
+
 namespace ecs::storage {
 
 /// Stores components in multiple equally-sized vectors.
@@ -25,17 +27,7 @@ private:
   using Signature = Bitset2::bitset2<sizeof...(TStoredComponents)>;
 
   template<typename TComponent>
-  static constexpr auto find_component_index() {
-    auto index = hana::find_if(
-      hana::make_range(0_c, hana::size_c<sizeof...(TStoredComponents)>),
-      [](auto index) { return _component_types[index] == hana::type_c<TComponent>; }
-    );
-    static_assert(index != hana::nothing, "Component type is not stored.");
-    return index.value();
-  }
-
-  template<typename TComponent>
-  static constexpr size_t _component_index = find_component_index<TComponent>();
+  static constexpr size_t _component_index = type_index<TComponent, TStoredComponents...>;
 
   template<typename... TRequiredComponents>
   static constexpr Signature signature_of = (Signature(0) |= ... |= (Signature(1) << _component_index<TRequiredComponents>));

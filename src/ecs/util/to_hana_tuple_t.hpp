@@ -1,11 +1,11 @@
-/// Utility to convert a variadic template of the form T<Ts...> into a hana::tuple_t<Ts...>, discarding T.
+/// @file
+/// @brief Utility to convert a variadic template of the form T<Ts...> into a hana::tuple_t<Ts...>, discarding T.
 
 #pragma once
 
 #include <boost/hana/tuple.hpp>
 namespace hana = boost::hana;
 
-/// @cond INTERNAL
 /// Internal namespace only used in this header.
 namespace internal {
 
@@ -20,7 +20,6 @@ struct ToHanaTuple<T<Ts...>> {
 };
 
 }
-/// @endcond
 
 /// The converted `boost::hana::tuple_t` from some variadic template.
 template<typename T>
