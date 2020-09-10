@@ -17,23 +17,11 @@ public:
   // Thus, it MAY NOT depend on the stored component types.
   using Entity = typename TStorage</* nothing */>::Entity;
 
-  // Runtime wrapper template for instantiating a callable logic pipeline..
+  // Runtime wrapper template for instantiating a callable logic pipeline.
   // (Unfortunately) this needs to be a class because template deduction guides are not implemented for alias templates (yet).
   template<typename... TSystems>
-  class Runtime {
-  public:
-    constexpr Runtime(TSystems&&... systems) : _runtime(TRuntime<TStorage, TSystems...>(std::forward<TSystems>(systems)...)) {
-      static_assert(
-        (std::is_rvalue_reference_v<decltype(systems)> && ...),
-        "Systems may only be moved in, not copied. Use std::move to transfer ownership or copy-construct beforehand."
-      );
-      // TODO: static assert invocability
-    }
-    constexpr auto operator()(auto... args) {
-      return _runtime(std::forward(args)...);
-    }
-  private:
-    TRuntime<TStorage, TSystems...> _runtime;
+  class Runtime : public TRuntime<TStorage, TSystems...> {
+    using TRuntime<TStorage, TSystems...>::TRuntime;
   };
 
   // Template deduction guide to support lvalue-references in constructor.

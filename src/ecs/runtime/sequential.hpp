@@ -29,7 +29,13 @@ public:
     _systems(std::make_tuple(std::forward<TSystems>(systems)...)),
     _runtime_manager(*this),
     _deferred_manager(*this)
-  {}
+  {
+    static_assert(
+      (std::is_rvalue_reference_v<decltype(systems)> && ...),
+      "Systems may only be moved in, not copied. Use std::move to transfer ownership or copy-construct beforehand."
+    );
+    // TODO: static assert invocability
+  }
 
   // Runs each system once.
   void operator()() {
