@@ -144,6 +144,13 @@ private:
     return Instance::run(_storage, callable);
   }
 
+public:
+
+  /// Constant reference to the deferred manager.
+  ///
+  /// This allows for deferred operations to be done outside of actual system execution
+  /// (e.g., in game initialization, loading levels, setting up configuration).
+  const SequentialDeferredManager& manager = _deferred_manager;
 };
 
 }
