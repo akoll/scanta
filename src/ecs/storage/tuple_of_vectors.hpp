@@ -3,6 +3,7 @@
 #include <iostream>
 #include <tuple>
 #include <vector>
+#include <cassert>
 
 #include "bitset2/bitset2.hpp"
 
