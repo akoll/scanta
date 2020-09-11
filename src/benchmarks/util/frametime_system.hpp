@@ -28,6 +28,13 @@ public:
       callback();
     }
   }
+
+  /// Reset counters and discard all unprinted measurements.
+  void reset() {
+    _seconds_total = 0.0f;
+    _current_frame = 0;
+  }
+
 private:
   float _seconds_total = 0.0f;
   uint32_t _current_frame = 0;
