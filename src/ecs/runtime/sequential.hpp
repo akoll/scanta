@@ -37,6 +37,11 @@ public:
     // TODO: static assert invocability
   }
 
+  template<typename TSystem>
+  TSystem& get_system() {
+    return std::get<TSystem>(_systems);
+  }
+
   // Runs each system once.
   void operator()() {
     double delta_time = _timer.reset();
@@ -87,7 +92,8 @@ public:
     for (auto& operation : deferred) operation(_deferred_manager);
 
     // TODO: Is this necessary every frame? Is this necessary for every storage? Sfinae if not defined.
-    _storage.refresh();
+    if constexpr (requires { _storage.refresh(); })
+      _storage.refresh();
   }
 
 private:
