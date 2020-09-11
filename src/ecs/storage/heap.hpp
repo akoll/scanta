@@ -41,6 +41,9 @@ public:
     using VoidPointer = typename std::conditional<smart, std::shared_ptr<void>, void*>::type;
     VoidPointer _pointer;
   public:
+    /// Default constructor.
+    Entity() = default;
+
     /// Constructor for converting from plain void-pointers.
     Entity(VoidPointer pointer) : _pointer(pointer) {}
   };
@@ -228,7 +231,7 @@ public:
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
     /// If the list of required component types is empty, the callable is called exactly once.
-    if constexpr(sizeof...(TRequiredComponents) > 0) {
+    if constexpr (sizeof...(TRequiredComponents) > 0) {
       // TODO: static_assert component types handled
       // Iterate all stored entities.
       for (Pointer<EntityData> entity_data : _entities) {
