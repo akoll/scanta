@@ -1,0 +1,17 @@
+\begin{tikzpicture}
+  \begin{axis}[
+    title={\textbf{Frametimes}},
+    width=12cm, height=8cm,
+    axis lines=left,
+    xlabel={entity count}, ylabel={frametime},
+    ymax=0.04,
+    grid=major,
+    %domain=0:12,
+    %samples=100
+  ]
+    \input{graph.tex}
+    \addlegendentry{Smart Heap}
+    \addlegendentry{Heap}
+    \addlegendentry{Tuple of Vectors}
+  \end{axis}
+\end{tikzpicture}

@@ -1,0 +1,5 @@
+*.out
+*.d
+*/graph.tex
+*.aux
+*.log
