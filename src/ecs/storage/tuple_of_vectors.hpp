@@ -163,7 +163,7 @@ public:
   template<typename... TRequiredComponents>
   void for_entities_with(auto callable) {
     /// If the list of required component types is empty, the callable is called exactly once.
-    if constexpr(sizeof...(TRequiredComponents) > 0) {
+    if constexpr (sizeof...(TRequiredComponents) > 0) {
       // TODO: static_assert component types handled
       // Construct a signature to be matched against from the required component types.
       constexpr Signature signature = signature_of<TRequiredComponents...>;
@@ -174,14 +174,14 @@ public:
         // TODO: call with manager (since this is sequential)
           callable(Entity{i});
       }
-    } else callable(Entity{SIZE_MAX}); // TODO: move check to runtime to avoid -1-reservation
+    } else callable(Entity{SIZE_MAX}); // TODO: move check to runtime to avoid -1-reservation (and also execute if ECS::Entity is required)
   }
 
   // TODO: document
   // TODO: parametrize parallelization
   template<typename... TRequiredComponents>
   void for_entities_with_parallel(auto callable) {
-    if constexpr(sizeof...(TRequiredComponents) > 0) {
+    if constexpr (sizeof...(TRequiredComponents) > 0) {
       // TODO: static_assert component types handled
       constexpr Signature signature = signature_of<TRequiredComponents...>;
       #pragma omp parallel for
