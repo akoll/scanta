@@ -8,9 +8,20 @@
 #include "ecs/scaffold/manager.hpp"
 
 #include "ecs/storage/tuple_of_vectors.hpp"
+#include "ecs/storage/heap.hpp"
+#include "ecs/storage/heap_smart.hpp"
+
 #include "ecs/runtime/sequential.hpp"
 
+#include "../util/frametime_system.hpp"
+
+#if defined TUPLE_OF_VECTORS
 using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
+#elif defined HEAP
+using ECS = ecs::EntityComponentSystem<ecs::storage::Heap, ecs::runtime::Sequential>;
+#elif defined HEAP_SMART
+using ECS = ecs::EntityComponentSystem<ecs::storage::SmartHeap, ecs::runtime::Sequential>;
+#endif
 
 struct Transform {
   glm::vec2 pos;
@@ -20,35 +31,9 @@ struct Age {
   float seconds_live;
 };
 
-bool running;
-
-class FrametimeSystem {
-public:
-  FrametimeSystem() {}
-
-  float get_seconds_total() const {
-    return _seconds_total;
-  }
-
-  void operator()(const ecs::RuntimeManager& manager, double delta_time) {
-    _seconds_total += delta_time;
-    if (_current_frame < _frame_times.size()) {
-      _frame_times[_current_frame++] = delta_time;
-    } else {
-      for (auto& time : _frame_times)
-        std::cout << time << std::endl;
-      running = false;
-    }
-  }
-private:
-  float _seconds_total = 0.0f;
-  uint32_t _current_frame = 0;
-  std::array<double, 1000> _frame_times;
-};
-
 class MoveRightSystem {
 public:
-  void operator()(const FrametimeSystem& frametime_system, ECS::Entity entity, float delta_time, Transform& transform, const Age& age) {
+  void operator()(const benchmark::FrametimeSystem<5000>& frametime_system, ECS::Entity entity, float delta_time, Transform& transform, const Age& age) {
     transform.pos = glm::vec2{
       320 - glm::sin(age.seconds_live * 2 - frametime_system.get_seconds_total()) * age.seconds_live * 45 / (1.0f + frametime_system.get_seconds_total() / 5),
       240 + glm::cos(age.seconds_live * 2 - frametime_system.get_seconds_total()) * age.seconds_live * 45 / (1.0f + frametime_system.get_seconds_total() / 5)
@@ -83,7 +68,8 @@ public:
     //   step = 0;
     // }
     return [](const auto& manager) {
-      manager.new_entity(Transform{}, Age{0});
+      for (auto i{0u}; i < 32; ++i)
+        manager.new_entity(Transform{}, Age{0});
     };
   }
 private:
@@ -112,17 +98,19 @@ int main() {
   }
   screen_surface = SDL_GetWindowSurface(window);
 
+  bool running = true;
+
   MoveRightSystem move_sys;
   ECS::Runtime tick(
-    FrametimeSystem{},
     std::move(move_sys),
     SpawnSystem{},
     AgeSystem{},
-    RenderSystem(screen_surface)
+    RenderSystem(screen_surface),
+    benchmark::FrametimeSystem<5000>([&running]() { running = false; })
   );
 
-  running = true;
   SDL_Event event;
+  event.type = 0;
   while (running && event.type != SDL_QUIT) {
     SDL_FillRect(screen_surface, nullptr, SDL_MapRGB(screen_surface->format, 0x00, 0x00, 0x00));
 
