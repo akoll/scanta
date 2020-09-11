@@ -1,7 +1,7 @@
 CC = clang++
 CFLAGS = -Wall -Wdocumentation -std=c++2a -O3 -fopenmp -I../.. -I../../../lib -lSDL2
 
-default: graph.tex
+default: bench_spawn.pdf
 
 tov.out: main.cpp $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) -DTUPLE_OF_VECTORS
@@ -19,7 +19,13 @@ graph.tex: tov.out heap.out heap_smart.out
 	./heap.out | python ../bench2tex.py blue 128 >> graph.tex
 	./tov.out | python ../bench2tex.py orange 128 >> graph.tex
 
+bench_spawn.pdf: graph.tex
+	pdflatex --jobname=bench_spawn spawn.tex
+
 clean:
-	rm -rf *.out *.d graph.tex
+	rm -rf *.out *.d *.log *.aux bench_spawn.pdf
+
+cleantex: clean
+	rm -rf graph.tex
 
 .PHONY: default run clean
