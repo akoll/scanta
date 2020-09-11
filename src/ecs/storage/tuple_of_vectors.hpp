@@ -123,11 +123,11 @@ public:
   }
 
   // TODO: return entity?
-  /// Creates and activate a new entity.
+  /// Creates and activates a new entity.
   ///
   /// If necessary, this will allocate memory.
   /// Requires the entity slot at index `_size` to be inactive.
-  /// @param components The set of components to be initially enabled on the new entity.
+  /// @param components The set of components to be initially associated with the new entity.
   void new_entity(auto&&... components) {
     // Grow exponentially if needed.
     if (_size >= _entities.size()) grow_to(_entities.size() * 2);
