@@ -202,7 +202,7 @@ public:
       entity_data = std::make_shared<EntityMetadata>();
     else
       entity_data = new EntityMetadata();
-    #if defined HEAP_VECTOR
+    #if not defined HEAP_SET
     // Add the new metadata pointer to the entity vector. This is O(1).
     _entities.push_back(entity_data);
     #else
@@ -217,7 +217,7 @@ public:
   ///
   /// Frees any memory for the entity metadata and associated components.
   void remove_entity(Entity entity) {
-    #if defined HEAP_VECTOR
+    #if not defined HEAP_SET
       // Find the entity in the vector of pointers. This is O(N).
       auto it = std::find(_entities.begin(), _entities.end(), static_cast<Pointer<EntityMetadata>>(entity));
       // If the entity has been found (/ is stored).
@@ -258,7 +258,7 @@ public:
   // TODO: for_entities_with_parallel
 
 private:
-  #if defined HEAP_VECTOR
+  #if not defined HEAP_SET
   /// Vector storing the entity metadata pointers.
   std::vector<Pointer<EntityMetadata>> _entities;
   #else
