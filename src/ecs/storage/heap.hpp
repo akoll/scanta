@@ -29,7 +29,7 @@ public:
   ///
   /// This entity handle type is used for the declaration of systems. A heap storage instance with stored component types specified
   /// defines another entity handle type, which can be converted from and to this one.
-  /// A void-pointer is used as the handle type, since the underlying entity metadata type is not known without component types.
+  /// A void-pointer is wrapped as the handle type, since the underlying entity metadata type is not known without component types.
   class Entity {
     // All other Heap classes are friends, so they can access the void-pointer for casting.
     template<bool, typename...>
@@ -96,8 +96,7 @@ public:
   /// The entity handle type of the heap storage.
   ///
   /// This entity handle type encapsulates the entity metadata with respect to the stored component types.
-  /// In the system definitions the type used is the one from the heap storage without stored components.
-  /// Both handle types are implicitly convertible, which makes this work.
+  /// In system definitions the base storage handle type is used. Both handle types are implicitly convertible.
   class Entity {
   private:
     /// The underlying metadata pointer.
