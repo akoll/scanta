@@ -71,7 +71,7 @@ private:
   using Pointer = typename std::conditional<smart, std::shared_ptr<T>, T*>::type;
 public:
   /// Entity metadata used by the storage internally.
-  struct EntityData {
+  struct EntityMetadata {
     /// The associated components are referenced in a tuple of pointers.
     /// For each component type, a pointer is stored, pointing to the component data.
     /// When a component is not enabled for the entity, the pointer is null.
@@ -87,7 +87,7 @@ public:
     }
 
     /// Destructor which deletes all components.
-    ~EntityData() {
+    ~EntityMetadata() {
       if constexpr (!smart)
         ((delete std::get<Pointer<std::decay_t<TStoredComponents>>>(components)), ...);
     }
@@ -100,18 +100,18 @@ public:
   class Entity {
   private:
     /// The underlying metadata pointer.
-    Pointer<EntityData> _pointer;
+    Pointer<EntityMetadata> _pointer;
   public:
     /// Constructor for converting from plain pointers.
-    Entity(Pointer<EntityData> pointer) : _pointer(pointer) {}
+    Entity(Pointer<EntityMetadata> pointer) : _pointer(pointer) {}
 
     /// Constructor for converting from the base entity handle type (used in system definitions).
     Entity(typename Heap<smart /* no stored component types */>::Entity other) {
       // Cast the void-pointer in the base handle to the appropriate handle from this storage.
       if constexpr (smart)
-        _pointer = std::static_pointer_cast<EntityData>(other._pointer);
+        _pointer = std::static_pointer_cast<EntityMetadata>(other._pointer);
       else
-        _pointer = static_cast<EntityData*>(other._pointer);
+        _pointer = static_cast<EntityMetadata*>(other._pointer);
     }
 
     /// Conversion operator for converting to a base handle.
@@ -124,12 +124,12 @@ public:
     }
 
     /// Conversion operator for converting to a plain pointer.
-    operator Pointer<EntityData>() {
+    operator Pointer<EntityMetadata>() {
       return _pointer;
     }
 
     /// Dereferencing pointer access operator.
-    Pointer<EntityData> operator->() {
+    Pointer<EntityMetadata> operator->() {
       return _pointer;
     }
   };
@@ -195,12 +195,12 @@ public:
   /// @param components The set of components to be initially associated with the new entity.
   void new_entity(auto&&... components) {
     // Pointer to the new entity metadata.
-    Pointer<EntityData> entity_data;
+    Pointer<EntityMetadata> entity_data;
     // Construct either shared or plain.
     if constexpr (smart)
-      entity_data = std::make_shared<EntityData>();
+      entity_data = std::make_shared<EntityMetadata>();
     else
-      entity_data = new EntityData();
+      entity_data = new EntityMetadata();
     // Add the new metadata pointer to the entity vector.
     _entities.push_back(entity_data);
     // Set initial components by forwarding them (retaining references without copy).
@@ -212,7 +212,7 @@ public:
   /// Frees any memory for the entity metadata and associated components.
   void remove_entity(Entity entity) {
     // Find the entity in the vector of pointers. This is O(N).
-    auto it = std::find(_entities.begin(), _entities.end(), static_cast<Pointer<EntityData>>(entity));
+    auto it = std::find(_entities.begin(), _entities.end(), static_cast<Pointer<EntityMetadata>>(entity));
     // If the entity has been found (/ is stored).
     if (it != _entities.end()) {
       // Delete it. This also deletes all components.
@@ -233,7 +233,7 @@ public:
     if constexpr (sizeof...(TRequiredComponents) > 0) {
       // TODO: static_assert component types handled
       // Iterate all stored entities.
-      for (Pointer<EntityData> entity_data : _entities) {
+      for (Pointer<EntityMetadata> entity_data : _entities) {
         // Check the entity signature by seeing if all required component pointers are non-null.
         // This is done using a fold-expression with the boolean AND operator. Since any non-null pointer
         // is truthy and null-pointers are falsey, this is equivalent to a signature match.
@@ -249,7 +249,7 @@ public:
 
 private:
   /// Vector storing the entity metadata pointers.
-  std::vector<Pointer<EntityData>> _entities;
+  std::vector<Pointer<EntityMetadata>> _entities;
 };
 
 // Convenience type alias of non-smart storage for passing the type into the scaffold ECS class.
