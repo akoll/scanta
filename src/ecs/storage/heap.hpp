@@ -14,11 +14,17 @@ using namespace hana::literals;
 
 namespace ecs::storage {
 
+  struct HeapOptions {
+    constexpr HeapOptions(bool smart) : smart(smart) {};
+
+    const bool smart;
+  };
+
   /// Internal namespace only used in this header.
   namespace internal {
 
   /// Base declaration for partial specialization.
-  template<bool smart, typename... TStoredComponents>
+  template<HeapOptions options, typename... TStoredComponents>
   class Heap;
 
   /// Partial specialization for the case of no stored components.
@@ -26,8 +32,8 @@ namespace ecs::storage {
   /// This is required because an entity handle type needs to be exposed
   /// to the scaffold before the list of stored components is known.
   /// @tparam smart Whether to use [smart pointers](https://en.cppreference.com/book/intro/smart_pointers) or regular pointers.
-  template<bool smart>
-  class Heap<smart> {
+  template<HeapOptions options>
+  class Heap<options> {
   public:
     /// The base entity handle type of the heap storage.
     ///
@@ -36,13 +42,13 @@ namespace ecs::storage {
     /// A void-pointer is wrapped as the handle type, since the underlying entity metadata type is not known without component types.
     class Entity {
       // All other Heap classes are friends, so they can access the void-pointer for casting.
-      template<bool, typename...>
+      template<HeapOptions, typename...>
       friend class Heap;
     private:
       /// The void-pointer type for this storage.
       ///
       /// If smart pointers are used, uses a shared pointer, otherwise a regular pointer.
-      using VoidPointer = typename std::conditional<smart, std::shared_ptr<void>, void*>::type;
+      using VoidPointer = typename std::conditional<options.smart, std::shared_ptr<void>, void*>::type;
       VoidPointer _pointer;
     public:
       /// Default constructor.
@@ -57,8 +63,8 @@ namespace ecs::storage {
   ///
   /// @tparam smart Whether to use [smart pointers](https://en.cppreference.com/book/intro/smart_pointers) or regular pointers.
   /// @tparam TStoredComponents The component types to be stored.
-  template<bool smart, typename... TStoredComponents>
-  class Heap : Heap<smart> {
+  template<HeapOptions options, typename... TStoredComponents>
+  class Heap : Heap<options> {
   private:
     /// The list of stored component types as a hana::tuple_t.
     ///
@@ -72,7 +78,7 @@ namespace ecs::storage {
     /// this type alias allows handling them equivalently.
     /// When using smart pointers, a shared pointer is used, otherwise a regular pointer is used.
     template<typename T>
-    using Pointer = typename std::conditional<smart, std::shared_ptr<T>, T*>::type;
+    using Pointer = typename std::conditional<options.smart, std::shared_ptr<T>, T*>::type;
   public:
     /// Entity metadata used by the storage internally.
     struct EntityMetadata {
@@ -84,7 +90,7 @@ namespace ecs::storage {
       /// Deletes all components associated with this entity.
       void clear_components() {
         // If regular pointers are used, memory needs to be freed first using `delete`.
-        if constexpr (!smart)
+        if constexpr (!options.smart)
           ((delete std::get<Pointer<std::decay_t<TStoredComponents>>>(components)), ...);
         // Set all pointer to null using a fold-expression.
         ((std::get<Pointer<std::decay_t<TStoredComponents>>>(components) = nullptr), ...);
@@ -92,7 +98,7 @@ namespace ecs::storage {
 
       /// Destructor which deletes all components.
       ~EntityMetadata() {
-        if constexpr (!smart)
+        if constexpr (!options.smart)
           ((delete std::get<Pointer<std::decay_t<TStoredComponents>>>(components)), ...);
       }
     };
@@ -110,21 +116,21 @@ namespace ecs::storage {
       Entity(Pointer<EntityMetadata> pointer) : _pointer(pointer) {}
 
       /// Constructor for converting from the base entity handle type (used in system definitions).
-      Entity(typename Heap<smart /* no stored component types */>::Entity other) {
+      Entity(typename Heap<options /* no stored component types */>::Entity other) {
         // Cast the void-pointer in the base handle to the appropriate handle from this storage.
-        if constexpr (smart)
+        if constexpr (options.smart)
           _pointer = std::static_pointer_cast<EntityMetadata>(other._pointer);
         else
           _pointer = static_cast<EntityMetadata*>(other._pointer);
       }
 
       /// Conversion operator for converting to a base handle.
-      operator typename Heap<smart>::Entity() {
+      operator typename Heap<options>::Entity() {
         // Construct a base handle from the metadata handle.
-        if constexpr (smart)
-          return std::static_pointer_cast<Heap<smart>::Entity>(_pointer);
+        if constexpr (options.smart)
+          return std::static_pointer_cast<Heap<options>::Entity>(_pointer);
         else
-          return static_cast<typename Heap<smart>::Entity>(_pointer);
+          return static_cast<typename Heap<options>::Entity>(_pointer);
       }
 
       /// Conversion operator for converting to a plain pointer.
@@ -174,7 +180,7 @@ namespace ecs::storage {
       // Remove all components from the entity.
       entity->clear_components();
       // Copy components from parameters.
-      if constexpr (smart)
+      if constexpr (options.smart)
         // The component rvalue parameter-pack is unpacked using a fold-expression.
         (
           // Use make_shared to create a shared smart pointer.
@@ -201,7 +207,7 @@ namespace ecs::storage {
       // Pointer to the new entity metadata.
       Pointer<EntityMetadata> entity_data;
       // Construct either shared or plain.
-      if constexpr (smart)
+      if constexpr (options.smart)
         entity_data = std::make_shared<EntityMetadata>();
       else
         entity_data = new EntityMetadata();
@@ -233,7 +239,7 @@ namespace ecs::storage {
         _entities.erase(entity);
       #endif
       // Delete the entity. This also deletes all components.
-      if constexpr (!smart) delete entity;
+      if constexpr (!options.smart) delete entity;
     }
 
     /// Execute a callable on each entity with all required components enabled.
@@ -252,10 +258,10 @@ namespace ecs::storage {
           // is truthy and null-pointers are falsey, this is equivalent to a signature match.
           if ((... && std::get<Pointer<TRequiredComponents>>(entity_data->components)))
             // Cast the entity handle to the base handle type for systems to process them.
-            callable(static_cast<typename Heap<smart>::Entity>(entity_data));
+            callable(static_cast<typename Heap<options>::Entity>(entity_data));
         }
         // Single-fire systems get a null-pointer as the entity handle.
-      } else callable(typename Heap<smart>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
+      } else callable(typename Heap<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
     }
 
     // TODO: for_entities_with_parallel
@@ -274,10 +280,10 @@ namespace ecs::storage {
 
 // Convenience type alias of non-smart storage for passing the type into the scaffold ECS class.
 template<typename... TComponents>
-class ExplicitHeap : public internal::Heap<false, TComponents...> {};
+class ExplicitHeap : public internal::Heap<HeapOptions(false), TComponents...> {};
 
 // Convenience type alias of smart storage for passing the type into the scaffold ECS class.
 template<typename... TComponents>
-class SmartHeap : public internal::Heap<true, TComponents...> {};
+class SmartHeap : public internal::Heap<HeapOptions(true), TComponents...> {};
 
 }
