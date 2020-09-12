@@ -9,14 +9,18 @@ tov.out: main.cpp $(DEPS)
 heap.out: main.cpp $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP
 
+heap_set.out: main.cpp $(DEPS)
+	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP -DHEAP_SET
+
 heap_smart.out: main.cpp $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP_SMART
 
 -include *.d
 
-graph.tex: tov.out heap.out heap_smart.out
+graph.tex: tov.out heap.out heap_set.out heap_smart.out
 	./heap_smart.out | python ../bench2tex.py green!75!black 128 > graph.tex
 	./heap.out | python ../bench2tex.py blue 128 >> graph.tex
+	./heap_set.out | python ../bench2tex.py blue!75!black 128 >> graph.tex
 	./tov.out | python ../bench2tex.py orange 128 >> graph.tex
 
 bench_spawn.pdf: spawn.tex graph.tex
