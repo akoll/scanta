@@ -218,13 +218,13 @@ namespace ecs::storage {
         entity_data = std::make_shared<EntityMetadata>();
       else
         entity_data = new EntityMetadata();
-      #if not defined HEAP_SET
-      // Add the new metadata pointer to the entity vector. This is O(1).
-      _entities.push_back(entity_data);
-      #else
-      // Add the new metadata pointer to the entity set. This is worst-case O(N).
-      _entities.insert(entity_data);
-      #endif
+      if constexpr (!options.entity_set) {
+        // Add the new metadata pointer to the entity vector. This is O(1).
+        _entities.push_back(entity_data);
+      } else {
+        // Add the new metadata pointer to the entity set. This is worst-case O(N).
+        _entities.insert(entity_data);
+      }
       // Set initial components by forwarding them (retaining references without copy).
       set_components(entity_data, std::forward<decltype(components)>(components)...);
     }
@@ -233,7 +233,7 @@ namespace ecs::storage {
     ///
     /// Frees any memory for the entity metadata and associated components.
     void remove_entity(Entity entity) {
-      #if not defined HEAP_SET
+      if constexpr (!options.entity_set) {
         // Find the entity in the vector of pointers. This is O(N).
         auto it = std::find(_entities.begin(), _entities.end(), static_cast<Pointer<EntityMetadata>>(entity));
         // If the entity has been found (/ is stored).
@@ -241,10 +241,10 @@ namespace ecs::storage {
           // Remove it from the entity vector.
           _entities.erase(it);
         // TODO: else: entity not found
-      #else
+      } else {
         // Remove the entity from the map. This is on average O(1).
         _entities.erase(entity);
-      #endif
+      }
       // Delete the entity. This also deletes all components.
       if constexpr (!options.smart_pointers) delete entity;
     }
@@ -274,13 +274,19 @@ namespace ecs::storage {
     // TODO: for_entities_with_parallel
 
   private:
-    #if not defined HEAP_SET
-    /// Vector storing the entity metadata pointers.
-    std::vector<Pointer<EntityMetadata>> _entities;
-    #else
-    /// Vector storing the entity metadata pointers.
-    std::unordered_set<Pointer<EntityMetadata>> _entities;
-    #endif
+    /// Entity metadata storage.
+    ///
+    /// Depending on the storage options `entity_set`, either a vector or a set of pointers.
+    std::conditional<
+      options.entity_set,
+      std::unordered_set<Pointer<EntityMetadata>>,
+      std::vector<Pointer<EntityMetadata>>
+    >::type _entities;
+
+    // /// Vector storing the entity metadata pointers.
+    // std::vector<Pointer<EntityMetadata>> _entities;
+    // /// Vector storing the entity metadata pointers.
+    // std::unordered_set<Pointer<EntityMetadata>> _entities;
   };
 
   }
