@@ -25,8 +25,13 @@ public:
   /// (Unfortunately) this needs to be a class because template deduction guides are not implemented for alias templates (yet).
   template<typename... TSystems>
   class Runtime : public TRuntime<TStorage, TSystems...> {
-    /// Constructor from runtime base class.
-    using TRuntime<TStorage, TSystems...>::TRuntime;
+  public:
+    // This constructor effectively acts as a template deduction guide
+    // (which unfortunately aren't supported by gcc yet (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501))
+    // to infer the system types from the constructor parameters.
+    Runtime(TSystems&&... systems) :
+      TRuntime<TStorage, TSystems...>(std::forward<decltype(systems)>(systems)...)
+    {}
   };
 
   /// Template deduction guide for inferring the system types from the constructor call.
@@ -34,8 +39,9 @@ public:
   /// NOTE: While this is valid (see http://eel.is/c++draft/temp.deduct.guide#3.sentence-4)
   /// it is not currently supported by gcc (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501).
   /// However, clang supports it (see https://bugs.llvm.org/show_bug.cgi?id=34520).
-  template<typename... TSystems>
-  Runtime(TSystems&&...) -> Runtime<TSystems...>;
+  /// @deprecated in favor of the runtime constructor wrapper.
+  // template<typename... TSystems>
+  // Runtime(TSystems&&...) -> Runtime<TSystems...>;
 };
 
 /// Namespace containing all runtime options which are shipped by default.

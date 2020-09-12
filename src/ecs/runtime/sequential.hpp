@@ -93,7 +93,8 @@ public:
 
 private:
   using typename Runtime::Info;
-  using Runtime::_storage;
+
+  Runtime::Storage _storage;
 
   // Tuple to store references to the systems. (std::tuple instead of hana::tuple for std::get<> via type).
   std::tuple<std::decay_t<TSystems>...> _systems;

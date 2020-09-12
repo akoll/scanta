@@ -15,7 +15,6 @@ protected:
 
   // The type of Storage used, determined by applying the associated component types as TStorage<...> template-parameters.
   using Storage = typename decltype(hana::unpack(Info::components, hana::template_<TStorage>))::type;
-  Storage _storage;
 };
 
 }
