@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "ecs/scaffold/ecs.hpp"
-#include "ecs/scaffold/manager.hpp"
 
 #include "ecs/storage/tuple_of_vectors.hpp"
 #include "ecs/storage/heap.hpp"

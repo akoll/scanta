@@ -5,11 +5,9 @@
 #include <chrono>
 
 #include "ecs/scaffold/ecs.hpp"
-#include "ecs/scaffold/manager.hpp"
 
 #include "ecs/storage/tuple_of_vectors.hpp"
 #include "ecs/storage/heap.hpp"
-#include "ecs/storage/heap_smart.hpp"
 
 #include "ecs/runtime/sequential.hpp"
 
@@ -18,7 +16,7 @@
 #if defined TUPLE_OF_VECTORS
 using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
 #elif defined HEAP
-using ECS = ecs::EntityComponentSystem<ecs::storage::Heap, ecs::runtime::Sequential>;
+using ECS = ecs::EntityComponentSystem<ecs::storage::ExplicitHeap, ecs::runtime::Sequential>;
 #elif defined HEAP_SMART
 using ECS = ecs::EntityComponentSystem<ecs::storage::SmartHeap, ecs::runtime::Sequential>;
 #endif
@@ -61,7 +59,7 @@ class SpawnSystem {
 public:
   SpawnSystem() {}
 
-  auto operator()(const ecs::RuntimeManager& manager, double delta_time) {
+  auto operator()(double delta_time) {
     // bool spawn = false;
     // if (++step == 100) {
     //   spawn = true;

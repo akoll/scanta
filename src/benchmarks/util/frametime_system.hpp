@@ -18,7 +18,7 @@ public:
     return _seconds_total;
   }
 
-  void operator()(const ecs::RuntimeManager& manager, double delta_time) {
+  void operator()(double delta_time) {
     _seconds_total += delta_time;
     if (_current_frame < _frame_times.size()) {
       _frame_times[_current_frame++] = delta_time;

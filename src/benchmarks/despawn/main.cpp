@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "ecs/scaffold/ecs.hpp"
-#include "ecs/scaffold/manager.hpp"
 
 #include "ecs/storage/tuple_of_vectors.hpp"
 #include "ecs/storage/heap.hpp"
@@ -36,7 +35,7 @@ public:
 class DespawnCountSystem {
 public:
   size_t count = 0;
-  auto operator()(const ecs::RuntimeManager& manager) {
+  auto operator()() {
     count = 0;
   }
 };
