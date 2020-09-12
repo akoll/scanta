@@ -2,7 +2,6 @@
 
 #include <boost/hana.hpp>
 #include "ecs/util/callable_traits.hpp"
-#include "manager.hpp"
 
 namespace hana = boost::hana;
 
@@ -25,8 +24,7 @@ struct Info {
       hana::to_set(systems),
       hana::to_set(hana::tuple_t<
         TEntity,
-        double, float, // delta_time
-        ecs::RuntimeManager
+        double, float // delta_time
       >)
     )
   );

@@ -8,7 +8,6 @@
 #include <boost/hana/ext/std/tuple.hpp>
 
 #include "ecs/scaffold/runtime.hpp"
-#include "ecs/scaffold/manager.hpp"
 
 #include "ecs/util/timer.hpp"
 
@@ -66,15 +65,11 @@ public:
               if constexpr (argtype == hana::type_c<Entity>) {
                 return std::reference_wrapper(entity);
               } else {
-                if constexpr (hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing) {
-                  return delta_time;
-                } else {
-                  return hana::eval_if(
-                    argtype == hana::type_c<ecs::RuntimeManager>,
-                    [&](auto _) { return _runtime_manager; },
-                    [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
-                  );
-                }
+                return hana::eval_if(
+                  (hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing),
+                  [&](auto _) { return _(delta_time); } ,
+                  [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
+                );
               }
             }
           }
@@ -103,16 +98,32 @@ private:
   // Tuple to store references to the systems. (std::tuple instead of hana::tuple for std::get<> via type).
   std::tuple<std::decay_t<TSystems>...> _systems;
 
-  class SequentialRuntimeManager : public virtual ecs::RuntimeManager {
+  class SequentialRuntimeManager {
   public:
     SequentialRuntimeManager(SequentialRuntime& runtime) : _runtime(runtime) {}
 
-    size_t get_entity_count() const override {
+    // Execution-time functions:
+
+    size_t get_entity_count() const {
       return _runtime._storage.get_size();
     }
 
     void defer(auto&& operation) const {
       _runtime._deferred_operations.push_back(operation);
+    }
+
+    // Deferred functions:
+
+    void new_entity(auto&&... components) const {
+      defer([&](const auto& manager) {
+        manager.new_entity(std::forward<decltype(components)>(components)...);
+      });
+    }
+
+    void remove_entity(Entity entity) const {
+      defer([entity](const auto& manager) {
+        manager.remove_entity(entity);
+      });
     }
   protected:
     SequentialRuntime& _runtime;
