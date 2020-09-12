@@ -33,12 +33,20 @@ public:
   }
 };
 
-class SpawnSystem {
+class DespawnCountSystem {
 public:
-  auto operator()() {
-    return [](const auto& manager) {
-      for (auto i{0u}; i < 128; ++i)
-        manager.new_entity(BigBoi{});
+  size_t count = 0;
+  auto operator()(const ecs::RuntimeManager& manager) {
+    count = 0;
+  }
+};
+
+class DespawnSystem {
+public:
+  auto operator()(ECS::Entity entity, DespawnCountSystem& despawn_count_system, BigBoi&) {
+    auto count = despawn_count_system.count++;
+    return [count, entity](const auto& manager) {
+      if (count < 64) manager.remove_entity(entity);
     };
   }
 };
@@ -48,9 +56,12 @@ int main() {
 
   ECS::Runtime scene(
     BigSystem{},
-    SpawnSystem{},
+    DespawnCountSystem{},
+    DespawnSystem{},
     benchmark::FrametimeSystem<5000>([&running]() { running = false; })
   );
+
+  for (auto i{0u}; i < 320000; ++i) scene.manager.new_entity(BigBoi{});
 
   running = true;
   while (running) {
