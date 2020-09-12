@@ -45,7 +45,6 @@ public:
   // Runs each system once.
   void operator()() {
     double delta_time = _timer.reset();
-    std::vector<std::function<void(const SequentialDeferredManager&)>> deferred;
     hana::for_each(_systems, [&](auto& system) {
       using ReturnType = ct::return_type_t<decltype(system)>;
       constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
@@ -80,8 +79,8 @@ public:
             }
           }
         });
-        if constexpr (std::is_invocable_v<ReturnType, const SequentialDeferredManager&>) {
-          deferred.push_back(hana::unpack(args, system));
+        if constexpr (std::is_invocable_v<ReturnType, const SequentialRuntimeManager&>) {
+          hana::unpack(args, system)(_runtime_manager);
         } else {
           // Discard return value.
           hana::unpack(args, system);
@@ -89,7 +88,8 @@ public:
       });
     });
 
-    for (auto& operation : deferred) operation(_deferred_manager);
+    for (auto& operation : _deferred_operations) operation(_deferred_manager);
+    _deferred_operations.clear();
 
     // TODO: Is this necessary every frame? Is this necessary for every storage? Sfinae if not defined.
     if constexpr (requires { _storage.refresh(); })
@@ -98,11 +98,10 @@ public:
 
 private:
   using typename Runtime::Info;
+  using Runtime::_storage;
 
   // Tuple to store references to the systems. (std::tuple instead of hana::tuple for std::get<> via type).
   std::tuple<std::decay_t<TSystems>...> _systems;
-
-  using Runtime::_storage;
 
   class SequentialRuntimeManager : public virtual ecs::RuntimeManager {
   public:
@@ -110,6 +109,10 @@ private:
 
     size_t get_entity_count() const override {
       return _runtime._storage.get_size();
+    }
+
+    void defer(auto&& operation) const {
+      _runtime._deferred_operations.push_back(operation);
     }
   protected:
     SequentialRuntime& _runtime;
@@ -131,6 +134,8 @@ private:
   protected:
     using SequentialRuntimeManager::_runtime;
   } _deferred_manager;
+
+  std::vector<std::function<void(const SequentialDeferredManager&)>> _deferred_operations;
 
   // Timer for measuring frame times
   // TODO: try average over time timer
