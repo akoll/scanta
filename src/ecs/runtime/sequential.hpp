@@ -62,28 +62,46 @@ public:
   /// Systems with component dependencies are executed for each matching entities.
   /// Systems without dependencies are executed once only.
   void operator()() {
+    // Get the time since the last call.
     double delta_time = _timer.reset();
+    // Iterate each system stored.
     hana::for_each(_systems, [&](auto& system) {
+      // Extract the return type of the system call.
+      // This is later used to determine whether a managed call needs to be done.
       using ReturnType = ct::return_type_t<decltype(system)>;
+      // Get the parameters required by the system.
       constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
+      // Filter out just the parameters that are stored component types.
       constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes), Info::components);
+      // Iterate all entities with such components associated with them.
       for_entities_with(component_argtypes, [&](Entity entity) {
+        // Transform the system-required parameter types to their filled-in values.
+        // E.g., if a component type is to be passed in, this fetches that component.
+        // This `args` tuple then contains the actual parameters to be passed into the system call.
         auto args = hana::transform(argtypes, [&](auto argtype) {
+          // Fetch the argument type value from the tuple and convert to a typename.
           using ArgType = typename decltype(argtype)::type;
-          // Check if the argument type is a stored component type:
+          // Check if the argument type is a stored component type.
           if constexpr (hana::find(Info::components, argtype) != hana::nothing) {
-            // reference_wrapper is needed to store the reference in the args container (to later be unpacked into the system call).
+            // Get a storage-stored component reference as the argument.
+            // Plain references can not be stored in a heterogenous container.
+            // This, reference_wrapper is needed to store the reference in the args container
+            // (to later be unpacked into the system call).
             return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
           } else {
-            // Check if the argument type is a stored system type:
+            // Check if the argument type is a stored system type.
             if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
+            // Get a self-stored system reference as the argument.
               return std::reference_wrapper(std::get<ArgType>(_systems));
             } else {
-              // Use eval_if instead of constexpr if for conditional static_assert.
-              // TODO: use hana switch
+              // Check if the argument type is an entity handle.
               if constexpr (argtype == hana::type_c<Entity>) {
                 return std::reference_wrapper(entity);
               } else {
+                // Check if the argument type is a floating point number, representing
+                // a delta time (frametime / time since last frame).
+                // `eval_if` is used here instead of a `if constexpr` because it supports
+                // conditional `static_assert` for a custom compile-time failure.
                 return hana::eval_if(
                   (hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing),
                   [&](auto _) { return _(delta_time); } ,
@@ -93,19 +111,33 @@ public:
             }
           }
         });
+        // If the system execution returns a callable operation, it is called immediately
+        // with the runtime manager as an argument.
+        // This is necessary, since the system functions can not be template functions
+        // (because their parameter types are extracted and used here, requiring them to be concrete),
+        // however, the runtime manager type is not known at the time of system declaration.
+        // Thus, the system call may may return a template function (e.g., a lambda with `auto` parameter)
+        // which is then instantiated with the correct manager type.
         if constexpr (std::is_invocable_v<ReturnType, const SequentialRuntimeManager&>) {
+          // Call the system on the filled-in tuple of arguments and call the result with the manager.
+          // `hana::unpack` applies the tuple of arguments as parameters to a function call.
+          // The function called here is implicitly `system.operator()` for objects.
           hana::unpack(args, system)(_runtime_manager);
         } else {
-          // Discard return value.
+          // If the system call result is not invocable, discard it.
           hana::unpack(args, system);
         }
       });
     });
 
+    // Execute all currently queued deferred operations.
     for (auto& operation : _deferred_operations) operation(_deferred_manager);
     _deferred_operations.clear();
 
-    // TODO: Is this necessary every frame? Is this necessary for every storage? Sfinae if not defined.
+    // Certain entity-component storages need to be refreshed periodically to restore
+    // certain preconditions or optimizations.
+    // Check whether the used storage supports it, by seeing if the expression
+    // is well-formed. If so, call it.
     if constexpr (requires { _storage.refresh(); })
       _storage.refresh();
   }
