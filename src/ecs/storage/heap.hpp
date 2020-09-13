@@ -23,7 +23,7 @@ namespace ecs::storage {
   /// parameter instead of a preprocessor define.
   /// This struct is only ever instantiated at compile-time.
   constexpr struct HeapOptions {
-    /// Whether to use smart pointers or regular pointers.
+    /// Whether to use [smart pointers](https://en.cppreference.com/book/intro/smart_pointers) or regular pointers.
     const bool smart_pointers = false;
     /// Whether to use a set or a vector for storing entity metadata.
     const bool entity_set = false;
@@ -47,7 +47,7 @@ namespace ecs::storage {
   ///
   /// This is required because an entity handle type needs to be exposed
   /// to the scaffold before the list of stored components is known.
-  /// @tparam smart Whether to use [smart pointers](https://en.cppreference.com/book/intro/smart_pointers) or regular pointers.
+  /// @tparam options The heap storage options to be used.
   template<HeapOptions options>
   class Heap<options> {
   public:
@@ -77,7 +77,7 @@ namespace ecs::storage {
 
   /// Stores components and entity metadata in dynamically allocated and scattered heap regions.
   ///
-  /// @tparam smart Whether to use [smart pointers](https://en.cppreference.com/book/intro/smart_pointers) or regular pointers.
+  /// @tparam options The heap storage options to be used.
   /// @tparam TStoredComponents The component types to be stored.
   template<HeapOptions options, typename... TStoredComponents>
   class Heap : Heap<options> {
