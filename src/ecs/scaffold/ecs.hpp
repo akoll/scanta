@@ -29,6 +29,7 @@ public:
     // This constructor effectively acts as a template deduction guide
     // (which unfortunately aren't supported by gcc yet (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501))
     // to infer the system types from the constructor parameters.
+    /// Will not be necessary anymore, once gcc support deduction guides.
     Runtime(TSystems&&... systems) :
       TRuntime<TStorage, TSystems...>(std::forward<decltype(systems)>(systems)...)
     {}
@@ -39,7 +40,8 @@ public:
   /// NOTE: While this is valid (see http://eel.is/c++draft/temp.deduct.guide#3.sentence-4)
   /// it is not currently supported by gcc (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501).
   /// However, clang supports it (see https://bugs.llvm.org/show_bug.cgi?id=34520).
-  /// @deprecated in favor of the runtime constructor wrapper.
+  ///
+  /// As soon as gcc rolls out support, this deduction guide can be used, deprecating the runtime constructor.
   // template<typename... TSystems>
   // Runtime(TSystems&&...) -> Runtime<TSystems...>;
 };

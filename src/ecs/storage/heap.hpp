@@ -14,21 +14,30 @@ using namespace hana::literals;
 
 namespace ecs::storage {
 
+  /// Internal namespace only used in this header.
+  namespace internal {
+
+  /// Structure for setting and accessing heap storage configuration.
+  ///
+  /// Allows the configuration to be passed in as a compile-time template
+  /// parameter instead of a preprocessor define.
+  /// This struct is only ever instantiated at compile-time.
   constexpr struct HeapOptions {
+    /// Whether to use smart pointers or regular pointers.
     const bool smart_pointers = false;
+    /// Whether to use a set or a vector for storing entity metadata.
     const bool entity_set = false;
 
+    /// Copies the options but with smart pointers configured.
     constexpr HeapOptions use_smart_pointers() const {
       return HeapOptions{true, this->entity_set};
     }
 
+    /// Copies the options but with entity set configured.
     constexpr HeapOptions use_entity_set() const {
       return HeapOptions{this->smart_pointers, true};
     }
   } heap_options;
-
-  /// Internal namespace only used in this header.
-  namespace internal {
 
   /// Base declaration for partial specialization.
   template<HeapOptions options, typename... TStoredComponents>
@@ -289,14 +298,29 @@ namespace ecs::storage {
     // std::unordered_set<Pointer<EntityMetadata>> _entities;
   };
 
+  /// Heap storage configuration class.
+  template<HeapOptions options = heap_options>
+  class CustomHeap {
+  public:
+    /// The configured storage.
+    template<typename... TComponents>
+    using Storage = internal::Heap<options, TComponents...>;
+
+    /// This class but with smart pointers configured.
+    using WithSmartPointers = CustomHeap<options.use_smart_pointers()>;
+    /// This class but with entity set configured.
+    using WithEntitySet = CustomHeap<options.use_entity_set()>;
+  };
+
   }
 
-// Convenience type alias of non-smart storage for passing the type into the scaffold ECS class.
-template<typename... TComponents>
-class ExplicitHeap : public internal::Heap<heap_options, TComponents...> {};
+/// Heap storage with custom options.
+///
+/// This avoids having to write `<>` after CustomHeap when using.
+using CustomHeap = internal::CustomHeap<>;
 
-// Convenience type alias of smart storage for passing the type into the scaffold ECS class.
+/// Heap storage with default options.
 template<typename... TComponents>
-class SmartHeap : public internal::Heap<heap_options.use_smart_pointers(), TComponents...> {};
+using Heap = internal::Heap<internal::heap_options, TComponents...>;
 
 }
