@@ -10,11 +10,25 @@
 #include "../util/frametime_system.hpp"
 
 #if defined TUPLE_OF_VECTORS
-using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
+using ECS = ecs::EntityComponentSystem<
+  ecs::storage::TupleOfVectors,
+  ecs::runtime::Sequential
+>;
 #elif defined HEAP
-using ECS = ecs::EntityComponentSystem<ecs::storage::ExplicitHeap, ecs::runtime::Sequential>;
-#elif defined HEAP_SMART
-using ECS = ecs::EntityComponentSystem<ecs::storage::SmartHeap, ecs::runtime::Sequential>;
+using ECS = ecs::EntityComponentSystem<
+  ecs::storage::CustomHeap
+    #ifdef HEAP_SMART
+    ::WithSmartPointers
+    #endif
+    #ifdef HEAP_SET
+      ::WithEntitySet
+    #endif
+    ::Storage
+  ,
+  ecs::runtime::Sequential
+>;
+#else
+static_assert(false, "No storage strategy set.");
 #endif
 
 volatile size_t screen;
@@ -27,7 +41,7 @@ class BigSystem {
 public:
   void operator()(BigBoi& big_boi) {
     size_t sum = 0;
-    for (auto i{0u}; i < big_boi.stuff.size(); ++i) sum += ++big_boi.stuff[i] * i;
+    // for (auto i{0u}; i < big_boi.stuff.size(); ++i) sum += ++big_boi.stuff[i] * i;
     screen = sum;
   }
 };

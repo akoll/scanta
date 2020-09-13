@@ -12,14 +12,15 @@
       width=12cm, height=8cm,
       axis lines=left,
       xlabel={entity count}, ylabel={frametime},
-      ymax=0.04,
+      ymax=0.02,
       grid=major,
       %domain=0:12,
       %samples=100
     ]
       \input{graph.tex}
-      \addlegendentry{Smart Heap}
-      \addlegendentry{Heap}
+      \addlegendentry{Heap - smart pointers}
+      \addlegendentry{Heap - entity set}
+      \addlegendentry{Heap - vector}
       \addlegendentry{Tuple of Vectors}
     \end{axis}
   \end{tikzpicture}
