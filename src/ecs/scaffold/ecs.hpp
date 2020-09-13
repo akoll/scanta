@@ -29,7 +29,7 @@ public:
     // This constructor effectively acts as a template deduction guide
     // (which unfortunately aren't supported by gcc yet (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501))
     // to infer the system types from the constructor parameters.
-    /// Will not be necessary anymore, once gcc support deduction guides.
+    /// This is not supported by clang and will not be necessary anymore, once gcc supports deduction guides.
     Runtime(TSystems&&... systems) :
       TRuntime<TStorage, TSystems...>(std::forward<decltype(systems)>(systems)...)
     {}
