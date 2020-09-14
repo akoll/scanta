@@ -10,25 +10,28 @@
 #include "ecs/scaffold/runtime.hpp"
 
 #include "ecs/util/timer.hpp"
+#include "ecs/util/to_hana_tuple_t.hpp"
 
 namespace hana = boost::hana;
+using namespace hana::literals;
 namespace ct = boost::callable_traits;
 
 namespace ecs::runtime {
 
-/// Sequential ECS runtime, executing systems one after the other.
+/// Parallel ECS runtime, executing systems concurrently,
+/// respecting a directed acyclic dependency graph.
 ///
 /// @tparam TStorage The storage to be used.
 /// @tparam TSystems The system types that are stored and executed. Usually inferred from the constructor.
 template<template<typename...> typename TStorage, typename... TSystems>
-class Sequential : ecs::Runtime<TStorage, TSystems...> {
+class Parallel : ecs::Runtime<TStorage, TSystems...> {
 public:
   /// The base runtime type to be inherited from.
   using Runtime = ecs::Runtime<TStorage, TSystems...>;
 
   /// Redeclaration of the type of this class itself as a type alias.
   /// Allows simpler usage further down.
-  using SequentialRuntime = Sequential<TStorage, TSystems...>;
+  using ParallelRuntime = Parallel<TStorage, TSystems...>;
 
   /// The entity handle type from the storage.
   using typename Runtime::Entity;
@@ -36,7 +39,7 @@ public:
   /// Runtime constructor.
   ///
   /// @param systems The systems to be executed. Will be moved in.
-  Sequential(TSystems&&... systems) :
+  Parallel(TSystems&&... systems) :
     // Systems are passed as references and stored in a runtime-owned tuple.
     _systems(std::make_tuple(std::forward<TSystems>(systems)...)),
     _runtime_manager(*this, _storage),
@@ -55,13 +58,28 @@ public:
   /// Returns a reference to a stored system.
   template<typename TSystem>
   inline TSystem& get_system() {
-    return std::get<TSystem>(_systems);
+    // Find the tuple index of the batch containing the system.
+    constexpr auto index = hana::find_if(
+      // Create an integer range from 0 to the amount of batches stored (exclusively).
+      hana::make_range(0_c, hana::size_c<std::tuple_size_v<decltype(_systems)>>),
+      [](auto index) consteval {
+        // The type of the batch tuple for the system type to be searched in.
+        using Batch = std::tuple_element_t<index, decltype(_systems)>;
+        // See if the batch contains the queried system type.
+        return hana::contains(to_hana_tuple_t<Batch>, hana::type_c<TSystem>);
+      }
+    );
+    // Fail if the type is not found.
+    static_assert(index != hana::nothing, "The system type depended on is not registered.");
+    // Return the system reference from the found batch.
+    return std::get<TSystem>(std::get<index.value()>(_systems));
   }
 
   /// Defers an operation by queuing it.
   ///
   /// @param operation The operation to be deferred.
   inline void defer(auto&& operation) {
+    // TODO: mutex (e.g. scoped_lock)
     _deferred_operations.push_back(operation);
   }
 
@@ -79,60 +97,63 @@ public:
     // TODO: Only get delta_time if required by a system.
     // Get the time since the last call.
     double delta_time = _timer.reset();
-    // Iterate each system stored.
-    hana::for_each(_systems, [&](auto& system) {
-      // The system type as a type alias.
-      using System = decltype(system);
-      // Extract the return type of the system call.
-      // This is later used to determine whether a managed call needs to be done.
-      using ReturnType = ct::return_type_t<System>;
-      // Iterate all entities with matching components associated with them.
-      for_entities_with<Info::template parallelizable<System>>(Info::template component_argtypes<System>, [&](Entity entity) {
-        // Transform the system-required parameter types to their filled-in values.
-        // E.g., if a component type is to be passed in, this fetches that component.
-        // This `args` tuple then contains the actual parameters to be passed into the system call.
-        auto args = hana::transform(Info::template argtypes<System>, [&](auto argtype) {
-          // Fetch the argument type value from the tuple and convert to a type alias.
-          using ArgType = typename decltype(argtype)::type;
-          // Check if the argument type is a stored component type.
-          if constexpr (hana::find(Info::components, argtype) != hana::nothing) {
-            // Get a storage-stored component reference as the argument.
-            // Plain references can not be stored in a heterogenous container.
-            // This, reference_wrapper is needed to store the reference in the args container
-            // (to later be unpacked into the system call).
-            return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
-          }
-          // Check if the argument type is a stored system type.
-          if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
-          // Get a self-stored system reference as the argument.
-            return std::reference_wrapper(get_system<ArgType>());
-          }
-          // Check if the argument type is an entity handle.
-          if constexpr (argtype == hana::type_c<Entity>) {
-            return std::reference_wrapper(entity);
-          }
-          // Check if the argument type is a floating point number, representing
-          // a delta time (frametime / time since last frame).
-          if constexpr (hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing) {
-            return  delta_time;
+    // Iterate over each execution batch.
+    hana::for_each(_systems, [&](auto& batch) {
+      // Iterate each system in the batch.
+      hana::for_each(batch, [&](auto& system) {
+        // The system type as a type alias.
+        using System = decltype(system);
+        // Extract the return type of the system call.
+        // This is later used to determine whether a managed call needs to be done.
+        using ReturnType = ct::return_type_t<System>;
+        // Iterate all entities with matching components associated with them.
+        for_entities_with<Info::template parallelizable<System>>(Info::template component_argtypes<System>, [&](Entity entity) {
+          // Transform the system-required parameter types to their filled-in values.
+          // E.g., if a component type is to be passed in, this fetches that component.
+          // This `args` tuple then contains the actual parameters to be passed into the system call.
+          auto args = hana::transform(Info::template argtypes<System>, [&](auto argtype) {
+            // Fetch the argument type value from the tuple and convert to a type alias.
+            using ArgType = typename decltype(argtype)::type;
+            // Check if the argument type is a stored component type.
+            if constexpr (hana::find(Info::components, argtype) != hana::nothing) {
+              // Get a storage-stored component reference as the argument.
+              // Plain references can not be stored in a heterogenous container.
+              // This, reference_wrapper is needed to store the reference in the args container
+              // (to later be unpacked into the system call).
+              return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
+            }
+            // Check if the argument type is a stored system type.
+            if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
+            // Get a self-stored system reference as the argument.
+              return std::reference_wrapper(get_system<ArgType>());
+            }
+            // Check if the argument type is an entity handle.
+            if constexpr (argtype == hana::type_c<Entity>) {
+              return std::reference_wrapper(entity);
+            }
+            // Check if the argument type is a floating point number, representing
+            // a delta time (frametime / time since last frame).
+            if constexpr (hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing) {
+              return  delta_time;
+            }
+          });
+          // If the system execution returns a callable operation, it is called immediately
+          // with the runtime manager as an argument.
+          // This is necessary, since the system functions can not be template functions
+          // (because their parameter types are extracted and used here, requiring them to be concrete),
+          // however, the runtime manager type is not known at the time of system declaration.
+          // Thus, the system call may may return a template function (e.g., a lambda with `auto` parameter)
+          // which is then instantiated with the correct manager type.
+          if constexpr (std::is_invocable_v<ReturnType, const ParallelRuntimeManager&>) {
+            // Call the system on the filled-in tuple of arguments and call the result with the manager.
+            // `hana::unpack` applies the tuple of arguments as parameters to a function call.
+            // The function called here is implicitly `system.operator()` for objects.
+            hana::unpack(args, system)(_runtime_manager);
+          } else {
+            // If the system call result is not invocable, discard it.
+            hana::unpack(args, system);
           }
         });
-        // If the system execution returns a callable operation, it is called immediately
-        // with the runtime manager as an argument.
-        // This is necessary, since the system functions can not be template functions
-        // (because their parameter types are extracted and used here, requiring them to be concrete),
-        // however, the runtime manager type is not known at the time of system declaration.
-        // Thus, the system call may may return a template function (e.g., a lambda with `auto` parameter)
-        // which is then instantiated with the correct manager type.
-        if constexpr (std::is_invocable_v<ReturnType, const SequentialRuntimeManager&>) {
-          // Call the system on the filled-in tuple of arguments and call the result with the manager.
-          // `hana::unpack` applies the tuple of arguments as parameters to a function call.
-          // The function called here is implicitly `system.operator()` for objects.
-          hana::unpack(args, system)(_runtime_manager);
-        } else {
-          // If the system call result is not invocable, discard it.
-          hana::unpack(args, system);
-        }
       });
     });
 
@@ -160,21 +181,21 @@ private:
   /// This could be a `hana::tuple`, however, those do not support getting
   /// elements by their type. `std::get` does however, and so a std::tuple
   /// is used here. Conversion functions to a `hana::tuple` exist, enabling this.
-  std::tuple<std::decay_t<TSystems>...> _systems;
+  std::tuple<std::tuple<std::decay_t<TSystems>>...> _systems;
 
   // Runtime manager.
-  using SequentialRuntimeManager = Runtime::template RuntimeManager<SequentialRuntime>;
-  SequentialRuntimeManager _runtime_manager;
+  using ParallelRuntimeManager = Runtime::template RuntimeManager<ParallelRuntime>;
+  ParallelRuntimeManager _runtime_manager;
 
   // Deferred manager.
-  using SequentialDeferredManager = Runtime::template DeferredManager<SequentialRuntime>;
-  SequentialDeferredManager _deferred_manager;
+  using ParallelDeferredManager = Runtime::template DeferredManager<ParallelRuntime>;
+  ParallelDeferredManager _deferred_manager;
 
   /// List of currently queued deferred operations.
   ///
   /// Deferring is just adding the operation to this vector.
   /// The operations are then executed at a later time (namely after all systems are run).
-  std::vector<std::function<void(const SequentialDeferredManager&)>> _deferred_operations;
+  std::vector<std::function<void(const ParallelDeferredManager&)>> _deferred_operations;
 
   // TODO: try average over time timer
   /// Timer for measuring frame times
@@ -225,7 +246,7 @@ public:
   ///
   /// This allows for deferred operations to be done outside of actual system execution
   /// (e.g., in game initialization, loading levels, setting up configuration, etc.).
-  const SequentialDeferredManager& manager = _deferred_manager;
+  const ParallelDeferredManager& manager = _deferred_manager;
 };
 
 }

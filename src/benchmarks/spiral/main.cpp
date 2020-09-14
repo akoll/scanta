@@ -9,6 +9,7 @@
 #include "ecs/storage/tuple_of_vectors.hpp"
 #include "ecs/storage/heap.hpp"
 
+#include "ecs/runtime/parallel.hpp"
 #include "ecs/runtime/sequential.hpp"
 
 #include "../util/frametime_system.hpp"
@@ -16,7 +17,7 @@
 #if defined TUPLE_OF_VECTORS
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::TupleOfVectors,
-  ecs::runtime::Sequential
+  ecs::runtime::Parallel
 >;
 #elif defined HEAP
 using ECS = ecs::EntityComponentSystem<
@@ -29,7 +30,7 @@ using ECS = ecs::EntityComponentSystem<
     #endif
     ::Storage
   ,
-  ecs::runtime::Sequential
+  ecs::runtime::Parallel
 >;
 #else
 static_assert(false, "No storage strategy set.");

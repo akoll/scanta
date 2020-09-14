@@ -5,7 +5,7 @@
 #include <vector>
 #include <cassert>
 
-#include "bitset2/bitset2.hpp"
+#include <bitset2/bitset2.hpp>
 
 #include <boost/hana.hpp>
 namespace hana = boost::hana;
