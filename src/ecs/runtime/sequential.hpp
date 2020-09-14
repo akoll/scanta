@@ -12,6 +12,7 @@
 #include "ecs/util/timer.hpp"
 
 namespace hana = boost::hana;
+namespace ct = boost::callable_traits;
 
 namespace ecs::runtime {
 
@@ -67,15 +68,17 @@ public:
     double delta_time = _timer.reset();
     // Iterate each system stored.
     hana::for_each(_systems, [&](auto& system) {
+      // The system type as a type alias.
+      using System = decltype(system);
       // Extract the return type of the system call.
       // This is later used to determine whether a managed call needs to be done.
-      using ReturnType = ct::return_type_t<decltype(system)>;
+      using ReturnType = ct::return_type_t<System>;
       // Iterate all entities with matching components associated with them.
-      for_entities_with(Info::template component_argtypes<decltype(system)>, [&](Entity entity) {
+      for_entities_with<Info::template parallelizable<System>>(Info::template component_argtypes<System>, [&](Entity entity) {
         // Transform the system-required parameter types to their filled-in values.
         // E.g., if a component type is to be passed in, this fetches that component.
         // This `args` tuple then contains the actual parameters to be passed into the system call.
-        auto args = hana::transform(Info::template argtypes<decltype(system)>, [&](auto argtype) {
+        auto args = hana::transform(Info::template argtypes<System>, [&](auto argtype) {
           // Fetch the argument type value from the tuple and convert to a type alias.
           using ArgType = typename decltype(argtype)::type;
           // Check if the argument type is a stored component type.
@@ -268,8 +271,13 @@ private:
     ///
     /// @param storage The storage to be accessed.
     /// @param callable The operation to be executed for each matching entity.
+    /// @tparam parallel Whether to use inner parallelism or iterate sequentially.
+    template<bool parallel>
     static auto run(auto& storage, auto&& callable) {
-      return storage.template for_entities_with<TRequiredComponents...>(callable);
+      if constexpr (parallel)
+        return storage.template for_entities_with_parallel<TRequiredComponents...>(callable);
+      else
+        return storage.template for_entities_with<TRequiredComponents...>(callable);
     }
   };
 
@@ -282,11 +290,13 @@ private:
   /// as a `boost::hana::tuple_t` and translates them to the corresponding template call.
   /// @param component_argtypes The required component types matched against each entity as a `boost::hana::tuple_t`.
   /// @param callable The operation to be executed for each matching entity.
+  /// @tparam parallel Whether to use inner parallelism or iterate sequentially.
+  template<bool parallel>
   auto for_entities_with(auto component_argtypes, auto&& callable) {
     // The properly templated `ForEntitiesWith` type.
     // Translates the types given by the `component_argtypes = boost::hana::tuple_t<Ts...>` to `ForEntitiesWith<Ts...>`.
     using Instance = typename decltype(hana::unpack(component_argtypes, hana::template_<ForEntitiesWith>))::type;
-    return Instance::run(_storage, callable);
+    return Instance::template run<parallel>(_storage, callable);
   }
 
 public:

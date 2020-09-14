@@ -4,6 +4,7 @@
 #include "ecs/util/callable_traits.hpp"
 
 namespace hana = boost::hana;
+namespace ct = boost::callable_traits;
 
 namespace ecs {
 
@@ -31,13 +32,41 @@ struct Info {
     )
   );
 
-  /// The parameter types required by a system.
+  /// The parameter types required by a system in decayed form.
   template<typename TSystem>
   static constexpr auto argtypes = hana::transform(argtypes_of<TSystem>, hana::traits::decay);
 
-  /// The system parameter types that are also stored component types.
+  /// The decayed system parameter types that are also stored component types.
   template<typename TSystem>
   static constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes<TSystem>), components);
+
+  /// The non-decayed system parameter types that are also system types.
+  template<typename TSystem>
+  static constexpr auto system_argtypes = hana::filter(argtypes_of<TSystem>, [](auto argtype) consteval {
+    return hana::find(systems, hana::traits::decay(argtype)) != hana::nothing;
+  });
+
+  // TODO: require no non-const system deps.
+  /// Whether the system allows for inner parallelism or not.
+  ///
+  /// A system is considered parallelizable if it does not alter state of itself or any other system.
+  /// This is the case when it is marked `const` and does not have any non-const system references as parameters.
+  /// This also means that intentionally _not_ marking systems as const allows for the parallelism to
+  /// be disabled manually in cases where side-effects shall be considered outside the systems (e.g., I/O).
+  template<typename TSystem>
+  static constexpr bool parallelizable =
+    // A system shall not be parallelized if it is not marked const.
+    ct::is_const_member_v<TSystem>
+    // A system shall not be parallelized if non-const system parameters exist.
+    && (hana::find_if(
+      system_argtypes<TSystem>,
+      [](auto argtype) consteval {
+        return hana::bool_c<
+          !std::is_const_v<std::remove_reference_t<typename decltype(argtype)::type>>
+        >;
+      }
+    ) == hana::nothing);
+  ;
 };
 
 }
