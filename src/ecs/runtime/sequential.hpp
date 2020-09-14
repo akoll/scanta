@@ -62,6 +62,7 @@ public:
   /// Systems with component dependencies are executed for each matching entities.
   /// Systems without dependencies are executed once only.
   void operator()() {
+    // TODO: Only get delta_time if required by a system.
     // Get the time since the last call.
     double delta_time = _timer.reset();
     // Iterate each system stored.
@@ -88,27 +89,20 @@ public:
             // This, reference_wrapper is needed to store the reference in the args container
             // (to later be unpacked into the system call).
             return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
-          } else {
-            // Check if the argument type is a stored system type.
-            if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
-            // Get a self-stored system reference as the argument.
-              return std::reference_wrapper(std::get<ArgType>(_systems));
-            } else {
-              // Check if the argument type is an entity handle.
-              if constexpr (argtype == hana::type_c<Entity>) {
-                return std::reference_wrapper(entity);
-              } else {
-                // Check if the argument type is a floating point number, representing
-                // a delta time (frametime / time since last frame).
-                // `eval_if` is used here instead of a `if constexpr` because it supports
-                // conditional `static_assert` for a custom compile-time failure.
-                return hana::eval_if(
-                  (hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing),
-                  [&](auto _) { return _(delta_time); } ,
-                  [&](auto _) { static_assert(_(false), "System argument types are invalid"); }
-                );
-              }
-            }
+          }
+          // Check if the argument type is a stored system type.
+          if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
+          // Get a self-stored system reference as the argument.
+            return std::reference_wrapper(std::get<ArgType>(_systems));
+          }
+          // Check if the argument type is an entity handle.
+          if constexpr (argtype == hana::type_c<Entity>) {
+            return std::reference_wrapper(entity);
+          }
+          // Check if the argument type is a floating point number, representing
+          // a delta time (frametime / time since last frame).
+          if constexpr (hana::find(hana::tuple_t<double, float>, argtype) != hana::nothing) {
+            return  delta_time;
           }
         });
         // If the system execution returns a callable operation, it is called immediately
