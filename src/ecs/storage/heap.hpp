@@ -29,12 +29,12 @@ namespace ecs::storage {
     const bool entity_set = false;
 
     /// Copies the options but with smart pointers configured.
-    constexpr HeapOptions use_smart_pointers() const {
+    consteval HeapOptions use_smart_pointers() const {
       return HeapOptions{true, this->entity_set};
     }
 
     /// Copies the options but with entity set configured.
-    constexpr HeapOptions use_entity_set() const {
+    consteval HeapOptions use_entity_set() const {
       return HeapOptions{this->smart_pointers, true};
     }
   } heap_options;
