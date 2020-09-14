@@ -14,14 +14,14 @@ static constexpr auto argtypes_of = to_hana_tuple_t<ct::args_t<T>>;
 
 // Get the type of operator() on some template parameters.
 template<typename... Ps>
-constexpr auto get_template_callee_type = []<typename T>(T)
+constexpr auto get_template_callee_type = []<typename T>(T) consteval
 	-> decltype(hana::type_c<decltype(&T::type::template operator()<Ps...>)>)
 {
 	return hana::type_c<decltype(&T::type::template operator()<Ps...>)>;
 };
 
 // Get the type of operator() without template parameters.
-constexpr auto get_callee_type = []<typename T>(T)
+constexpr auto get_callee_type = []<typename T>(T) consteval
 	-> decltype(hana::type_c<decltype(&T::type::operator())>)
 {
 	return hana::type_c<decltype(&T::type::operator())>;
@@ -33,7 +33,7 @@ constexpr auto is_template_callable = hana::sfinae(get_template_callee_type<Ps..
 
 // Get the type of operator() and apply some template parameters only if possible.
 template<typename T, typename... Ps>
-constexpr auto get_conditional_callee_type() {
+consteval auto get_conditional_callee_type() {
 	constexpr auto template_callee = hana::sfinae(get_template_callee_type<Ps...>)(hana::type_c<T>);
 	if constexpr (template_callee == hana::nothing)
 		return hana::sfinae(get_template_callee_type<Ps...>)(hana::type_c<T>).value();

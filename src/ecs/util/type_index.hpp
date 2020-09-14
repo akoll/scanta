@@ -16,7 +16,7 @@ namespace internal {
 /// @tparam T The type to be searched.
 /// @tparam Ts The list of types to be searched in.
 template<typename T, typename... Ts>
-constexpr auto find_component_index() {
+consteval auto find_component_index() {
   // Return the first instance of the predicate being satisfied.
   auto index = hana::find_if(
     // Create an integer range from 0 to the amount of types searched (exclusively).
