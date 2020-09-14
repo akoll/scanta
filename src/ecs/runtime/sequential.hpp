@@ -162,8 +162,11 @@ private:
   /// is used here. Conversion functions to a `hana::tuple` exist, enabling this.
   std::tuple<std::decay_t<TSystems>...> _systems;
 
+  // Runtime manager.
   using SequentialRuntimeManager = Runtime::template RuntimeManager<SequentialRuntime>;
   SequentialRuntimeManager _runtime_manager;
+
+  // Deferred manager.
   using SequentialDeferredManager = Runtime::template DeferredManager<SequentialRuntime>;
   SequentialDeferredManager _deferred_manager;
 
