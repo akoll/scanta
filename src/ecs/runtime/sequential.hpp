@@ -70,17 +70,13 @@ public:
       // Extract the return type of the system call.
       // This is later used to determine whether a managed call needs to be done.
       using ReturnType = ct::return_type_t<decltype(system)>;
-      // Get the parameters required by the system.
-      constexpr auto argtypes = hana::transform(argtypes_of<decltype(system)>, hana::traits::decay);
-      // Filter out just the parameters that are stored component types.
-      constexpr auto component_argtypes = hana::intersection(hana::to_set(argtypes), Info::components);
-      // Iterate all entities with such components associated with them.
-      for_entities_with(component_argtypes, [&](Entity entity) {
+      // Iterate all entities with matching components associated with them.
+      for_entities_with(Info::template component_argtypes<decltype(system)>, [&](Entity entity) {
         // Transform the system-required parameter types to their filled-in values.
         // E.g., if a component type is to be passed in, this fetches that component.
         // This `args` tuple then contains the actual parameters to be passed into the system call.
-        auto args = hana::transform(argtypes, [&](auto argtype) {
-          // Fetch the argument type value from the tuple and convert to a typename.
+        auto args = hana::transform(Info::template argtypes<decltype(system)>, [&](auto argtype) {
+          // Fetch the argument type value from the tuple and convert to a type alias.
           using ArgType = typename decltype(argtype)::type;
           // Check if the argument type is a stored component type.
           if constexpr (hana::find(Info::components, argtype) != hana::nothing) {
