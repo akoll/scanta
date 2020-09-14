@@ -39,8 +39,8 @@ public:
   Sequential(TSystems&&... systems) :
     // Systems are passed as references and stored in a runtime-owned tuple.
     _systems(std::make_tuple(std::forward<TSystems>(systems)...)),
-    _runtime_manager(*this),
-    _deferred_manager(*this)
+    _runtime_manager(*this, _storage),
+    _deferred_manager(*this, _storage)
   {
     // As is, lvalue-referenced systems would be copied in.
     // Copying in the systems is almost never what a user wants.
@@ -56,6 +56,19 @@ public:
   template<typename TSystem>
   TSystem& get_system() {
     return std::get<TSystem>(_systems);
+  }
+
+  /// Defers an operation by queuing it.
+  ///
+  /// @param operation The operation to be deferred.
+  inline void defer(auto&& operation) {
+    _deferred_operations.push_back(operation);
+  }
+
+  /// Executes and clears all currently queued deferred operations.
+  inline void dispatch_deferred_operations() {
+    for (auto& operation : _deferred_operations) operation(_deferred_manager);
+    _deferred_operations.clear();
   }
 
   /// Runs each system once.
@@ -124,8 +137,7 @@ public:
     });
 
     // Execute all currently queued deferred operations.
-    for (auto& operation : _deferred_operations) operation(_deferred_manager);
-    _deferred_operations.clear();
+    dispatch_deferred_operations();
 
     // Certain entity-component storages need to be refreshed periodically to restore
     // certain preconditions or optimizations.
@@ -150,105 +162,10 @@ private:
   /// is used here. Conversion functions to a `hana::tuple` exist, enabling this.
   std::tuple<std::decay_t<TSystems>...> _systems;
 
-  /// The runtime manager to be passed into system executions.
-  ///
-  /// Systems may need to be able to execute certain runtime operations
-  /// and access the underlying storage. Therefor, a _manager_ is provided
-  /// to the system execution, on which such operations can be done.
-  class SequentialRuntimeManager {
-  public:
-    /// Constructs a manager for some sequential runtime.
-    ///
-    /// @param runtime The runtime to be managed.
-    SequentialRuntimeManager(SequentialRuntime& runtime) : _runtime(runtime) {}
-
-    // Immediately executed functions:
-
-    /// Returns the size of the underlying entity storage.
-    ///
-    /// Note that depending on the storage implementation, this might also be
-    /// just an upper bound when called non-deferred.
-    size_t get_entity_count() const {
-      return _runtime._storage.get_size();
-    }
-
-    /// Defers an operation by queuing it with the runtime.
-    ///
-    /// @param operation The operation to be deferred.
-    void defer(auto&& operation) const {
-      _runtime._deferred_operations.push_back(operation);
-    }
-
-    // Deferred functions:
-
-    /// Creates a new entity in the scene.
-    ///
-    /// When called, the entity is not created immediately,
-    /// but merely queued as a deferred operation.
-    /// This is done for consistent predictability when interchanging
-    /// with parallelized runtimes, since those use deferring to avoid
-    /// mutex violations and race conditions.
-    ///
-    /// @param components The set of components to be initially associated with the new entity.
-    void new_entity(auto&&... components) const {
-      defer([&](const auto& manager) {
-        manager.new_entity(std::forward<decltype(components)>(components)...);
-      });
-    }
-
-    /// Removes an entity from the scene.
-    ///
-    /// When called, the entity is not removed immediately,
-    /// but merely queued as a deferred operation.
-    /// This is done for consistent predictability when interchanging
-    /// with parallelized runtimes, since those use deferring to avoid
-    /// mutex violations and race conditions.
-    ///
-    /// @param entity The entity to be removed.
-    void remove_entity(Entity entity) const {
-      defer([entity](const auto& manager) {
-        manager.remove_entity(entity);
-      });
-    }
-  protected:
-    /// The runtime to be managed by this manager.
-    SequentialRuntime& _runtime;
-  } _runtime_manager;
-
-  /// The deferred manager to be passed into deferred operation executions.
-  ///
-  /// Deferred operations may need to be able to execute certain runtime operations
-  /// and access the underlying storage. Therefor, a _manager_ is provided
-  /// to the deferred call, on which such operations can be done.
-  ///
-  /// This manager's methods are a superset of the runtime manager's.
-  class SequentialDeferredManager : public SequentialRuntimeManager {
-  public:
-    /// Constructs a manager for some sequential runtime.
-    ///
-    /// @param runtime The runtime to be managed.
-    SequentialDeferredManager(SequentialRuntime& runtime) : SequentialRuntimeManager(runtime) {}
-
-    // Include runtime manager functionality.
-    using SequentialRuntimeManager::get_entity_count;
-
-    /// Creates a new entity in the scene.
-    ///
-    /// @param components The set of components to be initially associated with the new entity.
-    void new_entity(auto&&... components) const {
-      _runtime._storage.new_entity(std::forward<decltype(components)>(components)...);
-    }
-
-    /// Removes an entity from the scene.
-    ///
-    /// @param entity The entity to be removed.
-    void remove_entity(Entity entity) const {
-      _runtime._storage.remove_entity(entity);
-    }
-  protected:
-    /// The runtime to be managed by this manager.
-    using SequentialRuntimeManager::_runtime;
-  } _deferred_manager;
+  using SequentialRuntimeManager = Runtime::template RuntimeManager<SequentialRuntime>;
+  SequentialRuntimeManager _runtime_manager;
+  using SequentialDeferredManager = Runtime::template DeferredManager<SequentialRuntime>;
+  SequentialDeferredManager _deferred_manager;
 
   /// List of currently queued deferred operations.
   ///
