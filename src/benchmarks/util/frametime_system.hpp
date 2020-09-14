@@ -12,7 +12,7 @@ template<size_t N>
 class FrametimeSystem {
 public:
   /// @param callback Callback to call when N frames have been measured.
-  FrametimeSystem(const std::function<void()>& callback) : callback(callback) {}
+  FrametimeSystem(const std::function<void()>& callback) : _callback(callback) {}
 
   float get_seconds_total() const {
     return _seconds_total;
@@ -25,7 +25,7 @@ public:
     } else {
       for (auto& time : _frame_times)
         std::cout << time << std::endl;
-      callback();
+      _callback();
     }
   }
 
@@ -39,7 +39,7 @@ private:
   float _seconds_total = 0.0f;
   uint32_t _current_frame = 0;
   std::array<double, N> _frame_times;
-  const std::function<void()>& callback;
+  const std::function<void()>& _callback;
 };
 
 }
