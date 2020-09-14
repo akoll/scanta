@@ -46,8 +46,7 @@ struct Info {
     return hana::find(systems, hana::traits::decay(argtype)) != hana::nothing;
   });
 
-  // TODO: require no non-const system deps.
-  /// Whether the system allows for inner parallelism or not.
+  /// Whether a system allows for inner parallelism or not.
   ///
   /// A system is considered parallelizable if it does not alter state of itself or any other system.
   /// This is the case when it is marked `const` and does not have any non-const system references as parameters.
