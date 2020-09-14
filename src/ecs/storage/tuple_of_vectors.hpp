@@ -161,7 +161,7 @@ public:
   /// @tparam TRequiredComponents The set of component types required to be enabled for an entity to be processed.
   /// @param callable The callable to be executed with each matched entity's index as an argument.
   template<typename... TRequiredComponents>
-  void for_entities_with(auto callable) {
+  void for_entities_with(auto&& callable) const {
     /// If the list of required component types is empty, the callable is called exactly once.
     if constexpr (sizeof...(TRequiredComponents) > 0) {
       // TODO: static_assert component types handled
@@ -180,10 +180,10 @@ public:
   // TODO: document
   // TODO: parametrize parallelization
   template<typename... TRequiredComponents>
-  void for_entities_with_parallel(auto callable) {
+  void for_entities_with_parallel(auto&& callable) const {
     if constexpr (sizeof...(TRequiredComponents) > 0) {
       // TODO: static_assert component types handled
-      constexpr Signature signature = signature_of<TRequiredComponents...>;
+      static constexpr Signature signature = signature_of<TRequiredComponents...>;
       #pragma omp parallel for
       for (size_t i = 0; i < _size; ++i) {
         if ((_entities[i].signature & signature) == signature)
