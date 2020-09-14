@@ -1,5 +1,5 @@
-CC = clang++
-CFLAGS = -Wall -Wdocumentation -std=c++2a -O3 -fopenmp -I../.. -I../../../lib -lSDL2
+CC = g++
+CFLAGS = -Wall -std=c++2a -O3 -fopenmp -I../.. -I../../../lib -lSDL2
 
 default: bench_spiral.pdf
 
@@ -10,7 +10,7 @@ heap.out: main.cpp $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP
 
 heap_smart.out: main.cpp $(DEPS)
-	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP_SMART
+	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP -DHEAP_SMART
 
 -include *.d
 

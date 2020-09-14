@@ -14,11 +14,25 @@
 #include "../util/frametime_system.hpp"
 
 #if defined TUPLE_OF_VECTORS
-using ECS = ecs::EntityComponentSystem<ecs::storage::TupleOfVectors, ecs::runtime::Sequential>;
+using ECS = ecs::EntityComponentSystem<
+  ecs::storage::TupleOfVectors,
+  ecs::runtime::Sequential
+>;
 #elif defined HEAP
-using ECS = ecs::EntityComponentSystem<ecs::storage::ExplicitHeap, ecs::runtime::Sequential>;
-#elif defined HEAP_SMART
-using ECS = ecs::EntityComponentSystem<ecs::storage::SmartHeap, ecs::runtime::Sequential>;
+using ECS = ecs::EntityComponentSystem<
+  ecs::storage::CustomHeap
+    #ifdef HEAP_SMART
+    ::WithSmartPointers
+    #endif
+    #ifdef HEAP_SET
+      ::WithEntitySet
+    #endif
+    ::Storage
+  ,
+  ecs::runtime::Sequential
+>;
+#else
+static_assert(false, "No storage strategy set.");
 #endif
 
 struct Transform {
@@ -31,7 +45,7 @@ struct Age {
 
 class MoveRightSystem {
 public:
-  void operator()(const benchmark::FrametimeSystem<5000>& frametime_system, ECS::Entity entity, float delta_time, Transform& transform, const Age& age) {
+  void operator()(const benchmark::FrametimeSystem<1000>& frametime_system, ECS::Entity entity, float delta_time, Transform& transform, const Age& age) const {
     transform.pos = glm::vec2{
       320 - glm::sin(age.seconds_live * 2 - frametime_system.get_seconds_total()) * age.seconds_live * 45 / (1.0f + frametime_system.get_seconds_total() / 5),
       240 + glm::cos(age.seconds_live * 2 - frametime_system.get_seconds_total()) * age.seconds_live * 45 / (1.0f + frametime_system.get_seconds_total() / 5)
@@ -104,7 +118,7 @@ int main() {
     SpawnSystem{},
     AgeSystem{},
     RenderSystem(screen_surface),
-    benchmark::FrametimeSystem<5000>([&running]() { running = false; })
+    benchmark::FrametimeSystem<1000>([&running]() { running = false; })
   );
 
   SDL_Event event;
