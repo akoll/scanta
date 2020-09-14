@@ -192,9 +192,9 @@ private:
     template<bool parallel>
     static auto run(auto& storage, auto&& callable) {
       if constexpr (parallel)
-        return storage.template for_entities_with_parallel<TRequiredComponents...>(callable);
+        return storage.template for_entities_with_parallel<TRequiredComponents...>(std::forward<decltype(callable)>(callable));
       else
-        return storage.template for_entities_with<TRequiredComponents...>(callable);
+        return storage.template for_entities_with<TRequiredComponents...>(std::forward<decltype(callable)>(callable));
     }
   };
 
@@ -213,7 +213,7 @@ private:
     // The properly templated `ForEntitiesWith` type.
     // Translates the types given by the `component_argtypes = boost::hana::tuple_t<Ts...>` to `ForEntitiesWith<Ts...>`.
     using Instance = typename decltype(hana::unpack(component_argtypes, hana::template_<ForEntitiesWith>))::type;
-    return Instance::template run<parallel>(_storage, callable);
+    return Instance::template run<parallel>(_storage, std::forward<decltype(callable)>(callable));
   }
 
 public:
