@@ -280,6 +280,26 @@ namespace ecs::storage {
       } else callable(typename Heap<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
     }
 
+    // TODO: document
+    template<typename... TRequiredComponents>
+    void for_entities_with_parallel(auto callable) {
+      /// If the list of required component types is empty, the callable is called exactly once.
+      if constexpr (sizeof...(TRequiredComponents) > 0) {
+        // TODO: static_assert component types handled
+        // Iterate all stored entities.
+        #pragma omp parallel for
+        for (Pointer<EntityMetadata> entity_data : _entities) {
+          // Check the entity signature by seeing if all required component pointers are non-null.
+          // This is done using a fold-expression with the boolean AND operator. Since any non-null pointer
+          // is truthy and null-pointers are falsey, this is equivalent to a signature match.
+          if ((... && std::get<Pointer<TRequiredComponents>>(entity_data->components)))
+            // Cast the entity handle to the base handle type for systems to process them.
+            callable(static_cast<typename Heap<options>::Entity>(entity_data));
+        }
+        // Single-fire systems get a null-pointer as the entity handle.
+      } else callable(typename Heap<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
+    }
+
     // TODO: for_entities_with_parallel
 
   private:
