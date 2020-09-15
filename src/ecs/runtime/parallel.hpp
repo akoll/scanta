@@ -118,18 +118,18 @@ public:
             if constexpr (hana::find(Info::components, argtype) != hana::nothing) {
               // Get a storage-stored component reference as the argument.
               // Plain references can not be stored in a heterogenous container.
-              // This, reference_wrapper is needed to store the reference in the args container
+              // Thus, reference_wrapper (created by std::ref) is needed to store the reference in the args container
               // (to later be unpacked into the system call).
-              return std::reference_wrapper(_storage.template get_component<ArgType>(entity));
+              return std::ref(_storage.template get_component<ArgType>(entity));
             }
             // Check if the argument type is a stored system type.
             if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
             // Get a self-stored system reference as the argument.
-              return std::reference_wrapper(get_system<ArgType>());
+              return std::ref(get_system<ArgType>());
             }
             // Check if the argument type is an entity handle.
             if constexpr (argtype == hana::type_c<Entity>) {
-              return std::reference_wrapper(entity);
+              return std::ref(entity);
             }
             // Check if the argument type is a floating point number, representing
             // a delta time (frametime / time since last frame).
