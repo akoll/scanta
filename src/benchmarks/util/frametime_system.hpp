@@ -19,13 +19,16 @@ public:
   }
 
   void operator()(double delta_time) {
-    _seconds_total += delta_time;
-    if (_current_frame < _frame_times.size()) {
-      _frame_times[_current_frame++] = delta_time;
-    } else {
-      for (auto& time : _frame_times)
-        std::cout << time << std::endl;
-      _callback();
+    if (_first_frame) _first_frame = false;
+    else {
+      _seconds_total += delta_time;
+      if (_current_frame < _frame_times.size()) {
+        _frame_times[_current_frame++] = delta_time;
+      } else {
+        for (auto& time : _frame_times)
+          std::cout << time << std::endl;
+        _callback();
+      }
     }
   }
 
@@ -36,6 +39,7 @@ public:
   }
 
 private:
+  bool _first_frame = true;
   float _seconds_total = 0.0f;
   uint32_t _current_frame = 0;
   std::array<double, N> _frame_times;
