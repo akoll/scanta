@@ -6,21 +6,21 @@
 
 #include "ecs/scaffold/ecs.hpp"
 
-#include "ecs/storage/tuple_of_vectors.hpp"
-#include "ecs/storage/heap.hpp"
+#include "ecs/storage/contiguous.hpp"
+#include "ecs/storage/scattered.hpp"
 
 #include "ecs/runtime/sequential.hpp"
 
 #include "../util/frametime_system.hpp"
 
-#if defined TUPLE_OF_VECTORS
+#if defined CONTIGUOUS
 using ECS = ecs::EntityComponentSystem<
-  ecs::storage::TupleOfVectors,
+  ecs::storage::Contiguous,
   ecs::runtime::Sequential
 >;
-#elif defined HEAP
+#elif defined SCATTERED
 using ECS = ecs::EntityComponentSystem<
-  ecs::storage::CustomHeap
+  ecs::storage::ScatteredCustom
     #ifdef HEAP_SMART
     ::WithSmartPointers
     #endif

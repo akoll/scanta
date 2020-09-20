@@ -4,16 +4,16 @@ CFLAGS = -Wall -std=c++2a -O3 -fopenmp -I../.. -I../../../lib -lSDL2
 default: bench_spawn.pdf
 
 tov.out: main.cpp $(DEPS)
-	$(CC) -MMD -o $@ $< $(CFLAGS) -DTUPLE_OF_VECTORS
+	$(CC) -MMD -o $@ $< $(CFLAGS) -DCONTIGUOUS
 
 heap.out: main.cpp $(DEPS)
-	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP
+	$(CC) -MMD -o $@ $< $(CFLAGS) -DSCATTERED
 
 heap_set.out: main.cpp $(DEPS)
-	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP -DHEAP_SET
+	$(CC) -MMD -o $@ $< $(CFLAGS) -DSCATTERED -DHEAP_SET
 
 heap_smart.out: main.cpp $(DEPS)
-	$(CC) -MMD -o $@ $< $(CFLAGS) -DHEAP -DHEAP_SMART
+	$(CC) -MMD -o $@ $< $(CFLAGS) -DSCATTERED -DHEAP_SMART
 
 -include *.d
 
