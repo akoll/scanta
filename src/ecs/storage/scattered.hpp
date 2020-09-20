@@ -17,49 +17,49 @@ namespace ecs::storage {
   /// Internal namespace only used in this header.
   namespace internal {
 
-  /// Structure for setting and accessing heap storage configuration.
+  /// Structure for setting and accessing scattered storage configuration.
   ///
   /// Allows the configuration to be passed in as a compile-time template
   /// parameter instead of a preprocessor define.
   /// This struct is only ever instantiated at compile-time.
-  constexpr struct HeapOptions {
+  constexpr struct ScatteredOptions {
     /// Whether to use [smart pointers](https://en.cppreference.com/book/intro/smart_pointers) or regular pointers.
     const bool smart_pointers = false;
     /// Whether to use a set or a vector for storing entity metadata.
     const bool entity_set = false;
 
     /// Copies the options but with smart pointers configured.
-    consteval HeapOptions use_smart_pointers() const {
-      return HeapOptions{true, this->entity_set};
+    consteval ScatteredOptions use_smart_pointers() const {
+      return ScatteredOptions{true, this->entity_set};
     }
 
     /// Copies the options but with entity set configured.
-    consteval HeapOptions use_entity_set() const {
-      return HeapOptions{this->smart_pointers, true};
+    consteval ScatteredOptions use_entity_set() const {
+      return ScatteredOptions{this->smart_pointers, true};
     }
-  } heap_options;
+  } scattered_options;
 
   /// Base declaration for partial specialization.
-  template<HeapOptions options, typename... TStoredComponents>
-  class Heap;
+  template<ScatteredOptions options, typename... TStoredComponents>
+  class Scattered;
 
   /// Partial specialization for the case of no stored components.
   ///
   /// This is required because an entity handle type needs to be exposed
   /// to the scaffold before the list of stored components is known.
-  /// @tparam options The heap storage options to be used.
-  template<HeapOptions options>
-  class Heap<options> {
+  /// @tparam options The scattered storage options to be used.
+  template<ScatteredOptions options>
+  class Scattered<options> {
   public:
-    /// The base entity handle type of the heap storage.
+    /// The base entity handle type of the scattered storage.
     ///
-    /// This entity handle type is used for the declaration of systems. A heap storage instance with stored component types specified
+    /// This entity handle type is used for the declaration of systems. A scattered storage instance with stored component types specified
     /// defines another entity handle type, which can be converted from and to this one.
     /// A void-pointer is wrapped as the handle type, since the underlying entity metadata type is not known without component types.
     class Entity {
-      // All other Heap classes are friends, so they can access the void-pointer for casting.
-      template<HeapOptions, typename...>
-      friend class Heap;
+      // All other Scattered classes are friends, so they can access the void-pointer for casting.
+      template<ScatteredOptions, typename...>
+      friend class Scattered;
     private:
       /// The void-pointer type for this storage.
       ///
@@ -77,10 +77,10 @@ namespace ecs::storage {
 
   /// Stores components and entity metadata in dynamically allocated and scattered heap regions.
   ///
-  /// @tparam options The heap storage options to be used.
+  /// @tparam options The scattered storage options to be used.
   /// @tparam TStoredComponents The component types to be stored.
-  template<HeapOptions options, typename... TStoredComponents>
-  class Heap : Heap<options> {
+  template<ScatteredOptions options, typename... TStoredComponents>
+  class Scattered : Scattered<options> {
   private:
     /// The list of stored component types as a hana::tuple_t.
     ///
@@ -119,7 +119,7 @@ namespace ecs::storage {
       }
     };
 
-    /// The entity handle type of the heap storage.
+    /// The entity handle type of the scattered storage.
     ///
     /// This entity handle type encapsulates the entity metadata with respect to the stored component types.
     /// In system definitions the base storage handle type is used. Both handle types are implicitly convertible.
@@ -132,7 +132,7 @@ namespace ecs::storage {
       Entity(Pointer<EntityMetadata> pointer) : _pointer(pointer) {}
 
       /// Constructor for converting from the base entity handle type (used in system definitions).
-      Entity(typename Heap<options /* no stored component types */>::Entity other) {
+      Entity(typename Scattered<options /* no stored component types */>::Entity other) {
         // Cast the void-pointer in the base handle to the appropriate handle from this storage.
         if constexpr (options.smart_pointers)
           _pointer = std::static_pointer_cast<EntityMetadata>(other._pointer);
@@ -141,12 +141,12 @@ namespace ecs::storage {
       }
 
       /// Conversion operator for converting to a base handle.
-      operator typename Heap<options>::Entity() {
+      operator typename Scattered<options>::Entity() {
         // Construct a base handle from the metadata handle.
         if constexpr (options.smart_pointers)
-          return std::static_pointer_cast<Heap<options>::Entity>(_pointer);
+          return std::static_pointer_cast<Scattered<options>::Entity>(_pointer);
         else
-          return static_cast<typename Heap<options>::Entity>(_pointer);
+          return static_cast<typename Scattered<options>::Entity>(_pointer);
       }
 
       /// Conversion operator for converting to a plain pointer.
@@ -274,10 +274,10 @@ namespace ecs::storage {
           // is truthy and null-pointers are falsey, this is equivalent to a signature match.
           if ((... && std::get<Pointer<TRequiredComponents>>(entity_data->components)))
             // Cast the entity handle to the base handle type for systems to process them.
-            callable(static_cast<typename Heap<options>::Entity>(entity_data));
+            callable(static_cast<typename Scattered<options>::Entity>(entity_data));
         }
         // Single-fire systems get a null-pointer as the entity handle.
-      } else callable(typename Heap<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
+      } else callable(typename Scattered<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
     }
 
     // TODO: document
@@ -294,10 +294,10 @@ namespace ecs::storage {
           // is truthy and null-pointers are falsey, this is equivalent to a signature match.
           if ((... && std::get<Pointer<TRequiredComponents>>(entity_data->components)))
             // Cast the entity handle to the base handle type for systems to process them.
-            callable(static_cast<typename Heap<options>::Entity>(entity_data));
+            callable(static_cast<typename Scattered<options>::Entity>(entity_data));
         }
         // Single-fire systems get a null-pointer as the entity handle.
-      } else callable(typename Heap<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
+      } else callable(typename Scattered<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
     }
 
     // TODO: for_entities_with_parallel
@@ -318,29 +318,29 @@ namespace ecs::storage {
     // std::unordered_set<Pointer<EntityMetadata>> _entities;
   };
 
-  /// Heap storage configuration class.
-  template<HeapOptions options = heap_options>
-  class CustomHeap {
+  /// Scattered storage configuration class.
+  template<ScatteredOptions options = scattered_options>
+  class ScatteredCustom {
   public:
     /// The configured storage.
     template<typename... TComponents>
-    using Storage = internal::Heap<options, TComponents...>;
+    using Storage = internal::Scattered<options, TComponents...>;
 
     /// This class but with smart pointers configured.
-    using WithSmartPointers = CustomHeap<options.use_smart_pointers()>;
+    using WithSmartPointers = ScatteredCustom<options.use_smart_pointers()>;
     /// This class but with entity set configured.
-    using WithEntitySet = CustomHeap<options.use_entity_set()>;
+    using WithEntitySet = ScatteredCustom<options.use_entity_set()>;
   };
 
   }
 
-/// Heap storage with custom options.
+/// Scattered storage with custom options.
 ///
-/// This avoids having to write `<>` after CustomHeap when using.
-using CustomHeap = internal::CustomHeap<>;
+/// This avoids having to write `<>` after CustomScattered when using.
+using ScatteredCustom = internal::ScatteredCustom<>;
 
-/// Heap storage with default options.
+/// Scattered storage with default options.
 template<typename... TComponents>
-using Heap = internal::Heap<internal::heap_options, TComponents...>;
+using Scattered = internal::Scattered<internal::scattered_options, TComponents...>;
 
 }

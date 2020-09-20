@@ -22,7 +22,7 @@ namespace ecs::storage {
 ///
 /// @tparam TStoredComponents The component types to be stored.
 template<typename... TStoredComponents>
-class TupleOfVectors {
+class Contiguous {
 private:
   /// The list of stored component types as a hana::tuple_t.
   ///
@@ -57,7 +57,7 @@ public:
   /// Constructs a storage with no components initially stored.
   ///
   /// @param capacity The initial entity capacity for which to allocate memory for.
-  TupleOfVectors(size_t capacity = 32) {
+  Contiguous(size_t capacity = 32) {
     grow_to(capacity);
   }
 
