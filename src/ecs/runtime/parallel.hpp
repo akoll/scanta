@@ -80,13 +80,17 @@ public:
         static_assert(!std::is_same_v<FirstSystem, SecondSystem>, "Each system type may only be registered once.");
 
         // TODO: Document.
-        // TODO: check component writes
+        // TODO: Check component writes.
         if constexpr (
+          // Check if the second system depends on the first one explicitly.
           hana::contains(
             // The (system-type) parameters of the second system in decayed form.
             hana::transform(Info::template system_argtypes<SecondSystem>, hana::traits::decay),
             hana::type_c<FirstSystem>
           ) ||
+          // Check if the first system depends on the second one explicitly.
+          // The first will still precede the second one,
+          // thus accessing its result from the previous frame.
           hana::contains(
             // The (system-type) parameters of the first system in decayed form.
             hana::transform(Info::template system_argtypes<FirstSystem>, hana::traits::decay),
