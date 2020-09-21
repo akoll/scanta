@@ -55,7 +55,9 @@ public:
       (std::is_rvalue_reference_v<decltype(systems)> && ...),
       "Systems may only be moved in, not copied. Use std::move to transfer ownership or copy-construct beforehand."
     );
-    // TODO: static assert invocability
+    // TODO: Statically assert that no system is specified twice.
+    // TODO: Statically assert system invocability.
+    // TODO: Statically assert that no component type is specified more than once in system parameters.
 
     // Create a task for running each system. The result of this call is an std::tuple containing the tasks.
     auto graph = _taskflow.emplace([&]() { run_system<TSystems>(); } ...);
@@ -67,7 +69,7 @@ public:
     // This is the case when either at least one of the systems writes to component data that the other also accesses
     // or when one system explicitly depends on the other by a system parameter.
     //
-    // First element of the pair: count from 0 (inclusively) to the number of systems (exclusively).
+    // First element of the pair: count from 0 (inclusively) to the number of systems - 1 (exclusively).
     hana::for_each(hana::make_range(0_c, hana::size_c<sizeof...(TSystems) - 1>), [&](auto first_index) {
       // Second element of the pair: count from the first index (exclusively) to the number of systems (exclusively).
       hana::for_each(hana::make_range(first_index + hana::size_c<1>, hana::size_c<sizeof...(TSystems)>), [&](auto second_index) {
@@ -78,24 +80,58 @@ public:
         // Since first_index != second_index, when the two systems are of the same type, they have both been passed into
         // the constructor. This is not supported, because it would make system dependencies ambiguous.
         static_assert(!std::is_same_v<FirstSystem, SecondSystem>, "Each system type may only be registered once.");
-
-        // TODO: Document.
-        // TODO: Check component writes.
+        // Determine inter-system dependencies.
         if constexpr (
           // Check if the second system depends on the first one explicitly.
           hana::contains(
             // The (system-type) parameters of the second system in decayed form.
             hana::transform(Info::template system_argtypes<SecondSystem>, hana::traits::decay),
             hana::type_c<FirstSystem>
-          ) ||
+          )
           // Check if the first system depends on the second one explicitly.
           // The first will still precede the second one,
           // thus accessing its result from the previous frame.
-          hana::contains(
+          || hana::contains(
             // The (system-type) parameters of the first system in decayed form.
             hana::transform(Info::template system_argtypes<FirstSystem>, hana::traits::decay),
             hana::type_c<SecondSystem>
           )
+          // Determine component data read/write dependencies.
+          //
+          // Search the argument list of the first system for types that also exist in the second system.
+          // If both of them are references and at least one of them is non-const, a dependency is found.
+          // This algorithm misbehaves when a component type is specified as parameter more than once,
+          // since only the first instance is respected. This is not a problem because multiple references
+          // are forbidden by the constructor.
+          || hana::find_if(argtypes_of<FirstSystem>, [](auto first_arg) consteval {
+            // hana requires the result to be wrapped into an integral constant.
+            return hana::bool_c<[&]() consteval {
+              // If the argument type is not a reference, don't check for conflicts.
+              if constexpr (!std::is_reference_v<typename decltype(first_arg)::type>) return false;
+              // Search for the type in the second system's arguments.
+              auto second_arg_index = hana::index_if(
+                hana::transform(argtypes_of<SecondSystem>, hana::traits::decay),
+                [&](auto argtype) consteval { return hana::bool_c<argtype == hana::traits::decay(first_arg)>; }
+              );
+              if constexpr (second_arg_index != hana::nothing) {
+                // Get the full (non-decayed) argument type of the second system.
+                auto second_arg = argtypes_of<SecondSystem>[second_arg_index.value()];
+                // Declare type aliases for cleaner usage.
+                using FirstArg = typename decltype(first_arg)::type;
+                using SecondArg = typename decltype(second_arg)::type;
+                // If the argument type is not a reference, don't check for conflicts.
+                if constexpr (std::is_reference_v<SecondArg>) {
+                  // See if at least one of the arguments is non-const.
+                  if constexpr (
+                    !std::is_const_v<std::remove_reference_t<FirstArg>>
+                    || !std::is_const_v<std::remove_reference_t<SecondArg>>
+                  ) return true;
+                }
+              }
+              // No argument dependency has been found.
+              return false;
+            }()>;
+          }) != hana::nothing
         ) {
           auto& first_task = std::get<first_index>(graph);
           auto& second_task = std::get<second_index>(graph);
@@ -103,11 +139,6 @@ public:
         }
       });
     });
-
-    // ([&graph, task = std::get<type_index<TSystems, TSystems...>>(graph)]() {
-    //   std::cout << task.name() << std::endl;
-    //   Info::template system_argtypes<TSystems>
-    // }(), ...);
   }
 
   /// Returns a reference to a stored system.

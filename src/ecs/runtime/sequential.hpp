@@ -49,7 +49,9 @@ public:
       (std::is_rvalue_reference_v<decltype(systems)> && ...),
       "Systems may only be moved in, not copied. Use std::move to transfer ownership or copy-construct beforehand."
     );
-    // TODO: static assert invocability
+    // TODO: Statically assert that no system is specified twice.
+    // TODO: Statically assert system invocability.
+    // TODO: Statically assert that no component type is specified more than once in system parameters.
   }
 
   /// Returns a reference to a stored system.
