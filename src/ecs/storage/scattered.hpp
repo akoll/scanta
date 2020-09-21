@@ -100,7 +100,7 @@ namespace ecs::storage {
     struct EntityMetadata {
       /// The associated components are referenced in a tuple of pointers.
       /// For each component type, a pointer is stored, pointing to the component data.
-      /// When a component is not enabled for the entity, the pointer is null.
+      /// When no component of a type is attached to the entity, that pointer is null.
       std::tuple<Pointer<TStoredComponents>...> components;
 
       /// Deletes all components associated with this entity.
@@ -184,8 +184,8 @@ namespace ecs::storage {
 
     /// Sets the component data for some entity.
     ///
-    /// Any components previously enabled on the entity and not passed in again are disabled.
-    /// The passed in components make up the new complete set of components for that entity.
+    /// Any components previously attached to the entity and not passed in again are detached.
+    /// The passed in components make up the new complete set of components attached to that entity.
     /// Components are passed in as temporary rvalue-references. For each one, memory is then allocated
     /// and the component temporary is copied into the heap. The resulting pointer is stored in the entity metadata tuple.
     /// @param entity The entity for which to set the components.
@@ -258,9 +258,9 @@ namespace ecs::storage {
       if constexpr (!options.smart_pointers) delete entity;
     }
 
-    /// Execute a callable on each entity with all required components enabled.
+    /// Execute a callable on each entity with all required components attached.
     ///
-    /// @tparam TRequiredComponents The set of component types required to be enabled for an entity to be processed.
+    /// @tparam TRequiredComponents The set of component types required to be attached to an entity to be processed.
     /// @param callable The callable to be executed with each matched entity's index as an argument.
     template<typename... TRequiredComponents>
     void for_entities_with(auto&& callable) const {

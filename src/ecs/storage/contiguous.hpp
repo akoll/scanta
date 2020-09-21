@@ -82,8 +82,8 @@ public:
 
   /// Sets the component data for a single component of some entity.
   ///
-  /// This also enables the passed in component on this entity (i.e. the signature bit is set).
-  /// All other components enabled on this entity remain enabled and unchanged.
+  /// This also attaches the passed in component to this entity (i.e. the signature bit is set).
+  /// All other components attached to this entity remain attached and unchanged.
   /// @param entity The entity for which to set the component.
   /// @param component The component data to be assigned.
   template<typename TComponent>
@@ -97,8 +97,8 @@ public:
 
   /// Sets the component data for some entity.
   ///
-  /// Any components previously enabled on the entity and not passed in again are disabled.
-  /// The passed in components make up the new complete set of components for that entity.
+  /// Any components previously attached to the entity and not passed in again are detached.
+  /// The passed in components make up the new complete set of components attached to that entity.
   /// @param entity The entity for which to set the components.
   /// @param components The components to be assigned.
   template<typename... TComponents>
@@ -155,10 +155,10 @@ public:
     /// This means that `_size` is merely an upper bound.
   }
 
-  /// Execute a callable on each entity with all required components enabled.
+  /// Execute a callable on each entity with all required components attached.
   ///
   /// Requires no inactive entity to exist with an index smaller than the highest active one.
-  /// @tparam TRequiredComponents The set of component types required to be enabled for an entity to be processed.
+  /// @tparam TRequiredComponents The set of component types required to be attached to an entity to be processed.
   /// @param callable The callable to be executed with each matched entity's index as an argument.
   template<typename... TRequiredComponents>
   void for_entities_with(auto&& callable) const {
@@ -212,8 +212,8 @@ private:
   struct EntityMetadata {
     /// The entity's signature.
     ///
-    /// The state of a bit indicates whether the corresponding component type is enabled for the entity. A component is said to be
-    /// enabled for this entity if the bit is set, and disabled if not.
+    /// The state of a bit indicates whether the component of the corresponding component type is attached to the entity.
+    /// A component is said to be attached to this entity if the bit is set, and detached if not.
     /// This is necessary because for each entity, storage for each component type is allocated and initialized (in the vectors)
     /// and its signature tracks if said memory is to be considered associated with the entity.
     Signature signature;
