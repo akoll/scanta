@@ -49,12 +49,14 @@ public:
       (std::is_rvalue_reference_v<decltype(systems)> && ...),
       "Systems may only be moved in, not copied. Use std::move to transfer ownership or copy-construct beforehand."
     );
-    // TODO: static assert invocability
+    // TODO: Statically assert that no system is specified twice.
+    // TODO: Statically assert system invocability.
+    // TODO: Statically assert that no component type is specified more than once in system parameters.
   }
 
   /// Returns a reference to a stored system.
   template<typename TSystem>
-  TSystem& get_system() {
+  inline TSystem& get_system() {
     return std::get<TSystem>(_systems);
   }
 
@@ -104,8 +106,8 @@ public:
           }
           // Check if the argument type is a stored system type.
           if constexpr (hana::find(Info::systems, argtype) != hana::nothing) {
-          // Get a self-stored system reference as the argument.
-            return std::ref(std::get<ArgType>(_systems));
+            // Get a self-stored system reference as the argument.
+            return std::ref(get_system<ArgType>());
           }
           // Check if the argument type is an entity handle.
           if constexpr (argtype == hana::type_c<Entity>) {

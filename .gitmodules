@@ -1,3 +1,6 @@
 [submodule "lib/bitset2"]
 	path = lib/bitset2
 	url = https://github.com/ClaasBontus/bitset2.git
+[submodule "lib/taskflow"]
+	path = lib/taskflow
+	url = https://github.com/taskflow/taskflow.git

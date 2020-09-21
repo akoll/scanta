@@ -9,6 +9,7 @@
 #include "ecs/storage/contiguous.hpp"
 #include "ecs/storage/scattered.hpp"
 
+#include "ecs/runtime/parallel.hpp"
 #include "ecs/runtime/sequential.hpp"
 
 #include "../util/frametime_system.hpp"
@@ -16,7 +17,7 @@
 #if defined CONTIGUOUS
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::Contiguous,
-  ecs::runtime::Sequential
+  ecs::runtime::Parallel
 >;
 #elif defined SCATTERED
 using ECS = ecs::EntityComponentSystem<
@@ -29,7 +30,7 @@ using ECS = ecs::EntityComponentSystem<
     #endif
     ::Storage
   ,
-  ecs::runtime::Sequential
+  ecs::runtime::Parallel
 >;
 #else
 static_assert(false, "No storage strategy set.");

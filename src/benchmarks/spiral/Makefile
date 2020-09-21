@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -std=c++2a -O3 -fopenmp -I../.. -I../../../lib -lSDL2
+CFLAGS = -Wall -std=c++2a -O3 -fopenmp -I../.. -I../../../lib -I../../../lib/taskflow -lSDL2
 
 default: bench_spiral.pdf
 
