@@ -217,6 +217,7 @@ private:
     /// This is necessary because for each entity, storage for each component type is allocated and initialized (in the vectors)
     /// and its signature tracks if said memory is to be considered associated with the entity.
     Signature signature;
+
     /// The entity's activeness. This represents the entities's existence/presence, however this storage initializes memory for
     /// more entities than are active, so this boolean is required.
     bool active = false;
@@ -233,6 +234,7 @@ private:
   ///
   /// Always has the same size as all the component data vectors.
   std::vector<EntityMetadata> _entities;
+
   /// The vectors storing component data, arranged in a tuple.
   ///
   /// For each stored component type, there is one vector storing instances of it.
