@@ -32,7 +32,7 @@ public:
     }
   }
 
-  /// Reset counters and discard all unprinted measurements.
+  /// Resets counters and discard all unprinted measurements.
   void reset() {
     _seconds_total = 0.0f;
     _current_frame = 0;
