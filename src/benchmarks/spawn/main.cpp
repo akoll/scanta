@@ -2,15 +2,14 @@
 
 #include "ecs/scaffold/ecs.hpp"
 
-#include "ecs/storage/contiguous.hpp"
-#include "ecs/storage/scattered.hpp"
-
 #include "ecs/runtime/sequential.hpp"
 #include "ecs/runtime/parallel.hpp"
 
 #include "../util/frametime_system.hpp"
+#include "../util/memory_tracker.hpp"
 
 #if defined CONTIGUOUS
+#include "ecs/storage/contiguous.hpp"
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::Contiguous,
   #ifdef OUTER_PARALLEL
@@ -20,6 +19,7 @@ using ECS = ecs::EntityComponentSystem<
   #endif
 >;
 #elif defined SCATTERED
+#include "ecs/storage/scattered.hpp"
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::ScatteredCustom
     #ifdef HEAP_SMART
@@ -30,6 +30,16 @@ using ECS = ecs::EntityComponentSystem<
     #endif
     ::Storage
   ,
+  #ifdef OUTER_PARALLEL
+  ecs::runtime::Parallel
+  #else
+  ecs::runtime::Sequential
+  #endif
+>;
+#elif defined ENTT
+#include "ecs/storage/entt.hpp"
+using ECS = ecs::EntityComponentSystem<
+  ecs::storage::Entt,
   #ifdef OUTER_PARALLEL
   ecs::runtime::Parallel
   #else
@@ -119,15 +129,20 @@ int main() {
     SmallSystem{},
     SmallerSystem{},
     SpawnSystem{},
-    benchmark::FrametimeSystem<100>([&running]() { running = false; })
+    benchmark::FrametimeSystem<50>([&running]() { running = false; })
   );
+
+  std::cout << benchmark::memory::get_usage() << std::endl;
 
   for (auto i{0u}; i < 50000; ++i)
 	  scene.manager.new_entity(BiggestBoi{}, BigBoi{}, SmallBoi{}, SmallerBoi{});
 
+  std::cout << benchmark::memory::get_usage() << std::endl;
+
   running = true;
   while (running) {
     scene();
+    std::cout << benchmark::memory::get_usage() << std::endl;
   }
 
   return 0;
