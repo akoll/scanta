@@ -25,17 +25,25 @@ namespace ecs::storage {
   constexpr struct ScatteredOptions {
     /// Whether to use [smart pointers](https://en.cppreference.com/book/intro/smart_pointers) or regular pointers.
     const bool smart_pointers = false;
-    /// Whether to use a set or a vector for storing entity metadata.
-    const bool entity_set = false;
+
+    /// TODO:
+    enum EntityHandling {
+      vector,
+      set,
+      index,
+    };
+
+    /// The strategy used to handle entities.
+    const EntityHandling entity_handling = EntityHandling::vector;
 
     /// Copies the options but with smart pointers configured.
-    consteval ScatteredOptions use_smart_pointers() const {
-      return ScatteredOptions{true, this->entity_set};
+    consteval ScatteredOptions use_smart_pointers(bool value = true) const {
+      return ScatteredOptions{value, this->entity_handling};
     }
 
     /// Copies the options but with entity set configured.
-    consteval ScatteredOptions use_entity_set() const {
-      return ScatteredOptions{this->smart_pointers, true};
+    consteval ScatteredOptions use_entity_handling(EntityHandling handling) const {
+      return ScatteredOptions{this->smart_pointers, handling};
     }
   } scattered_options;
 
@@ -227,7 +235,7 @@ namespace ecs::storage {
         entity_data = std::make_shared<EntityMetadata>();
       else
         entity_data = new EntityMetadata();
-      if constexpr (!options.entity_set) {
+      if constexpr (options.entity_handling != ScatteredOptions::EntityHandling::set) {
         // Add the new metadata pointer to the entity vector. This is O(1).
         _entities.push_back(entity_data);
       } else {
@@ -242,7 +250,10 @@ namespace ecs::storage {
     ///
     /// Frees any memory for the entity metadata and associated components.
     void remove_entity(Entity entity) {
-      if constexpr (!options.entity_set) {
+      if constexpr (options.entity_handling == ScatteredOptions::EntityHandling::index) {
+        // Remove the entity from the vector by index.
+        _entities.erase(_entities.begin() + entity);
+      } else if constexpr (options.entity_handling == ScatteredOptions::EntityHandling::vector) {
         // Find the entity in the vector of pointers. This is O(N).
         auto it = std::find(_entities.begin(), _entities.end(), static_cast<Pointer<EntityMetadata>>(entity));
         // If the entity has been found (/ is stored).
@@ -250,7 +261,7 @@ namespace ecs::storage {
           // Remove it from the entity vector.
           _entities.erase(it);
         // TODO: else: entity not found
-      } else {
+      } else if constexpr (options.entity_handling == ScatteredOptions::EntityHandling::set) {
         // Remove the entity from the map. This is on average O(1).
         _entities.erase(entity);
       }
@@ -287,14 +298,31 @@ namespace ecs::storage {
       if constexpr (sizeof...(TRequiredComponents) > 0) {
         // TODO: static_assert component types handled
         // Iterate all stored entities.
-        #pragma omp parallel for
-        for (Pointer<EntityMetadata> entity_data : _entities) {
-          // Check the entity signature by seeing if all required component pointers are non-null.
-          // This is done using a fold-expression with the boolean AND operator. Since any non-null pointer
-          // is truthy and null-pointers are falsey, this is equivalent to a signature match.
-          if ((... && std::get<Pointer<TRequiredComponents>>(entity_data->components)))
-            // Cast the entity handle to the base handle type for systems to process them.
-            callable(static_cast<typename Scattered<options>::Entity>(entity_data));
+        if constexpr (options.entity_handling != ScatteredOptions::EntityHandling::set) {
+          #pragma omp parallel for
+          for (Pointer<EntityMetadata> entity_data : _entities) {
+            // Check the entity signature by seeing if all required component pointers are non-null.
+            // This is done using a fold-expression with the boolean AND operator. Since any non-null pointer
+            // is truthy and null-pointers are falsey, this is equivalent to a signature match.
+            if ((... && std::get<Pointer<TRequiredComponents>>(entity_data->components)))
+              // Cast the entity handle to the base handle type for systems to process them.
+              callable(static_cast<typename Scattered<options>::Entity>(entity_data));
+          }
+        } else {
+          // Iterate all buckets in the set in parallel.
+          #pragma omp parallel for
+          for (size_t bucket = 0; bucket < _entities.bucket_count(); ++bucket) {
+            // Iterate all stored entities in the bucket.
+            for (auto it = _entities.begin(bucket); it != _entities.end(bucket); ++it) {
+              Pointer<EntityMetadata> entity = *it;
+              // Check the entity signature by seeing if all required component pointers are non-null.
+              // This is done using a fold-expression with the boolean AND operator. Since any non-null pointer
+              // is truthy and null-pointers are falsey, this is equivalent to a signature match.
+              if ((... && std::get<Pointer<TRequiredComponents>>(entity->components)))
+                // Cast the entity handle to the base handle type for systems to process them.
+                callable(static_cast<typename Scattered<options>::Entity>(entity));
+            }
+          }
         }
         // Single-fire systems get a null-pointer as the entity handle.
       } else callable(typename Scattered<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
@@ -307,7 +335,7 @@ namespace ecs::storage {
     ///
     /// Depending on the storage options `entity_set`, either a vector or a set of pointers.
     std::conditional<
-      options.entity_set,
+      options.entity_handling == ScatteredOptions::EntityHandling::set,
       std::unordered_set<Pointer<EntityMetadata>>,
       std::vector<Pointer<EntityMetadata>>
     >::type _entities;
@@ -327,9 +355,15 @@ namespace ecs::storage {
     using Storage = internal::Scattered<options, TComponents...>;
 
     /// This class but with smart pointers configured.
-    using WithSmartPointers = ScatteredCustom<options.use_smart_pointers()>;
-    /// This class but with entity set configured.
-    using WithEntitySet = ScatteredCustom<options.use_entity_set()>;
+    using WithSmartPointers = ScatteredCustom<options.use_smart_pointers(true)>;
+    /// This class but with smart pointers turned off.
+    using WithoutSmartPointers = ScatteredCustom<options.use_smart_pointers(false)>;
+    /// This class but with entity handling configured to `index`.
+    using WithEntityIndex = ScatteredCustom<options.use_entity_handling(ScatteredOptions::EntityHandling::index)>;
+    /// This class but with entity handling configured to `vector`.
+    using WithEntityVector = ScatteredCustom<options.use_entity_handling(ScatteredOptions::EntityHandling::vector)>;
+    /// This class but with entity handling configured to `set`.
+    using WithEntitySet = ScatteredCustom<options.use_entity_handling(ScatteredOptions::EntityHandling::set)>;
   };
 
   }
