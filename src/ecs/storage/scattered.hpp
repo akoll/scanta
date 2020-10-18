@@ -326,11 +326,6 @@ namespace ecs::storage {
       std::unordered_set<Pointer<EntityMetadata>>,
       std::vector<Pointer<EntityMetadata>>
     >::type _entities;
-
-    // /// Vector storing the entity metadata pointers.
-    // std::vector<Pointer<EntityMetadata>> _entities;
-    // /// Vector storing the entity metadata pointers.
-    // std::unordered_set<Pointer<EntityMetadata>> _entities;
   };
 
   /// Scattered storage configuration class.
