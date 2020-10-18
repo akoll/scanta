@@ -27,6 +27,8 @@ using ECS = ecs::EntityComponentSystem<
     #endif
     #ifdef HEAP_SET
       ::WithEntitySet
+    #else
+      ::WithEntityVector
     #endif
     ::Storage
   ,

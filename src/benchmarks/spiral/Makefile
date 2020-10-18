@@ -9,15 +9,20 @@ tov.out: main.cpp $(DEPS)
 heap.out: main.cpp $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) -DSCATTERED
 
+heap_set.out: main.cpp $(DEPS)
+	$(CC) -MMD -o $@ $< $(CFLAGS) -DSCATTERED -DHEAP_SET
+
 heap_smart.out: main.cpp $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) -DSCATTERED -DHEAP_SMART
 
 -include *.d
 
 graph.tex: tov.out heap.out heap_smart.out
-	./heap_smart.out | python ../bench2tex.py green!75!black 32 > graph.tex
-	./heap.out | python ../bench2tex.py blue 32 >> graph.tex
-	./tov.out | python ../bench2tex.py orange 32 >> graph.tex
+	# ./heap_smart.out | python ../bench2tex.py green!75!black 32 > graph.tex
+	# ./heap.out | python ../bench2tex.py blue 32 > graph.tex
+	./heap_set.out | python ../bench2tex.py blue 32 > graph.tex
+	# ./tov.out | python ../bench2tex.py orange 32 >> graph.tex
+	./heap_seq.out | python ../bench2tex.py red 32 >> graph.tex
 
 bench_spiral.pdf: spiral.tex graph.tex
 	pdflatex --jobname=bench_spiral spiral.tex

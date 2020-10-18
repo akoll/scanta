@@ -27,6 +27,8 @@ using ECS = ecs::EntityComponentSystem<
     #endif
     #ifdef HEAP_SET
       ::WithEntitySet
+    #elif defined HEAP_INDEX
+      ::WithEntityIndex
     #endif
     ::Storage
   ,
@@ -62,7 +64,7 @@ constexpr auto iters =16u;
 
 class BiggestSystem {
 public:
-  void operator()(BiggestBoi& big_boi) {
+  void operator()(BiggestBoi& big_boi) const {
     size_t sum = 0;
     for (auto kek{0u}; kek < iters; ++kek)
       for (auto i{0u}; i < big_boi.stuff.size(); ++i) sum += ++big_boi.stuff[i] * i;
@@ -72,7 +74,7 @@ public:
 
 class BigSystem {
 public:
-  void operator()(BigBoi& big_boi) {
+  void operator()(BigBoi& big_boi) const {
     size_t sum = 0;
     for (auto kek{0u}; kek < iters; ++kek)
       for (auto i{0u}; i < big_boi.stuff.size(); ++i) sum += ++big_boi.stuff[i] * i;
@@ -82,7 +84,7 @@ public:
 
 class SmallSystem {
 public:
-  void operator()(SmallBoi& small_boi) {
+  void operator()(SmallBoi& small_boi) const {
     size_t sum = 0;
     for (auto kek{0u}; kek < iters; ++kek)
       for (auto i{0u}; i < small_boi.stuff.size(); ++i) sum += ++small_boi.stuff[i] * i;
@@ -92,7 +94,7 @@ public:
 
 class SmallerSystem {
 public:
-  void operator()(SmallerBoi& small_boi) {
+  void operator()(SmallerBoi& small_boi) const {
     size_t sum = 0;
     for (auto kek{0u}; kek < iters; ++kek)
       for (auto i{0u}; i < small_boi.stuff.size(); ++i) sum += ++small_boi.stuff[i] * i;
@@ -102,7 +104,7 @@ public:
 
 class SpawnSystem {
 public:
-  auto operator()() {
+  auto operator()() const {
     return [](const auto& manager) {
       for (auto i{0u}; i < 50000; ++i)
         manager.new_entity(BiggestBoi{}, BigBoi{}, SmallBoi{}, SmallerBoi{});
