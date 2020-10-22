@@ -73,7 +73,7 @@ public:
   ///
   /// @param entity The entity to be accessed.
   /// @tparam TComponent The component type to be queried.
-  /// @throws std::runtime_error when the queried component is not active on the entity.
+  /// @throws std::runtime_error when the queried component is not attached to the entity.
   template<typename TComponent>
   TComponent& get_component(Entity entity) {
     // TODO: static_assert component type handled
