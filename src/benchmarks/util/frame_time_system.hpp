@@ -20,9 +20,9 @@ public:
     if (_first_frame) _first_frame = false;
     else {
       _seconds_total += delta_time;
-      if (++_current_frame < _frame_times.size()) {
-        _frame_times[_current_frame] = delta_time;
-      } else {
+      if (_current_frame < _frame_times.size())
+        _frame_times[_current_frame++] = delta_time;
+      if (_current_frame >= N) {
         for (auto& time : _frame_times)
           std::cout << time << std::endl;
       }

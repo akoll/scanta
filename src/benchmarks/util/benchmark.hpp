@@ -3,55 +3,61 @@
 
 #include "ecs/scaffold/ecs.hpp"
 
-#include "ecs/runtime/sequential.hpp"
-#if defined OUTER_PARALLEL
-#include "ecs/runtime/parallel.hpp"
+#include "../util/frame_limit_system.hpp"
+#if defined BENCHMARK_FRAMETIME
+#include "../util/frame_time_system.hpp"
+#endif
+#if defined BENCHMARK_MEMORY
+#include "../util/memory_system.hpp"
 #endif
 
-#include "../util/frame_limit_system.hpp"
-#include "../util/frame_time_system.hpp"
-// TODO: only include when used
-#include "../util/memory_system.hpp"
+#if defined RUNTIME_SEQUENTIAL
+#include "ecs/runtime/sequential.hpp"
+#elif defined RUNTIME_PARALLEL
+#include "ecs/runtime/parallel.hpp"
+#else
+static_assert("No runtime strategy set.");
+#endif
 
-#if defined CONTIGUOUS
+#if defined STORAGE_TOV
 #include "ecs/storage/tuple_of_vectors.hpp"
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::TupleOfVectors,
-  #if not defined OUTER_PARALLEL
+  #if defined RUNTIME_SEQUENTIAL
   ecs::runtime::Sequential
-  #else
+  #elif defined RUNTIME_PARALLEL
   ecs::runtime::Parallel
   #endif
 >;
-#elif defined VOT
+#elif defined STORAGE_VOT
 #include "ecs/storage/vector_of_tuples.hpp"
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::VectorOfTuples,
-  #if not defined OUTER_PARALLEL
+  #if defined RUNTIME_SEQUENTIAL
   ecs::runtime::Sequential
-  #else
+  #elif defined RUNTIME_PARALLEL
   ecs::runtime::Parallel
   #endif
 >;
-#elif defined SCATTERED
+#elif defined STORAGE_SCATTERED
 #include "ecs/storage/scattered.hpp"
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::ScatteredCustom
-    #ifdef HEAP_SMART
+    #ifdef STORAGE_SCATTERED_SMART
     ::WithSmartPointers
     #endif
-    #ifdef HEAP_SET
+    #ifdef STORAGE_SCATTERED_SET
       ::WithEntitySet
     #endif
     ::Storage
   ,
-  #if not defined OUTER_PARALLEL
+  #if defined RUNTIME_SEQUENTIAL
   ecs::runtime::Sequential
-  #else
+  #elif defined RUNTIME_PARALLEL
   ecs::runtime::Parallel
   #endif
 >;
-#elif defined ENTT
+#elif defined STORAGE_ENTT
 #include "ecs/storage/entt.hpp"
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::Entt,
@@ -76,16 +82,24 @@ class Scene {
 public:
   using Runtime = ECS::Runtime<
     TSystems...,
-    benchmark::MemoryUsageSystem<FRAME_COUNT>,
+    #if defined BENCHMARK_FRAMETIME
     benchmark::FrameTimeSystem<FRAME_COUNT>,
+    #endif
+    #if defined BENCHMARK_MEMORY
+    benchmark::MemoryUsageSystem<FRAME_COUNT>,
+    #endif
     benchmark::FrameLimitSystem<FRAME_COUNT>
   >;
 
   Scene(TSystems&&... systems) :
     _scene(
       std::forward<TSystems>(systems)...,
-      benchmark::MemoryUsageSystem<FRAME_COUNT>(),
+      #if defined BENCHMARK_FRAMETIME
       benchmark::FrameTimeSystem<FRAME_COUNT>(),
+      #endif
+      #if defined BENCHMARK_MEMORY
+      benchmark::MemoryUsageSystem<FRAME_COUNT>(),
+      #endif
       benchmark::FrameLimitSystem<FRAME_COUNT>([this]() { _running = false; })
     )
   {}
