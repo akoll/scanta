@@ -9,8 +9,7 @@ offset = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 
 index = 0
 for line in sys.stdin:
-  if index >= 0:
-    print('  ({}, {})'.format(offset + index * multiplier, line.rstrip()))
+  print('  ({}, {})'.format(offset + index * multiplier, line.rstrip()))
   index += 1
 
 print('};')
