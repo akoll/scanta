@@ -77,7 +77,7 @@ public:
   ///
   /// Systems with component dependencies are executed for each matching entities.
   /// Systems without dependencies are executed once only.
-  void operator()() {
+  void update() {
     // TODO: Only get delta_time if required by a system.
     // Get the time since the last call.
     double delta_time = _timer.reset();

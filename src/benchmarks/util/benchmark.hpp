@@ -104,9 +104,9 @@ public:
     )
   {}
 
-  void operator()() {
+  void run() {
     _running = true;
-    while (_running) _scene();
+    while (_running) _scene.update();
   }
 
   operator BaseScene&() {
