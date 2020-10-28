@@ -8,8 +8,12 @@
 /// Namespace containing the ecs library.
 namespace ecs {
 
-// CStorage{TStorage}
+/// TODO: Document
+///
+/// @tparam TStorage The storage option to be used.
+/// @tparam TRuntime The runtime option to be used.
 template<template<typename...> typename TStorage, template<template<typename...> typename, typename...> typename TRuntime>
+// TODO: Add CRuntime constraint.
 requires CStorage<TStorage>
 class EntityComponentSystem {
 public:
@@ -19,18 +23,18 @@ public:
   /// Thus, it MAY NOT depend on the stored component types.
   using Entity = typename TStorage</* nothing */>::Entity;
 
-  /// Runtime wrapper template for instantiating a callable logic pipeline.
+  /// Combination of runtime and storage options for instantiating a callable logic pipeline using the specified storage option.
   ///
-  /// This is effectively a type alias with template parameters partially set.
+  /// This is effectively a type alias to the runtime option with template parameters partially set.
   /// (Unfortunately) this needs to be a class because template deduction guides are not implemented for alias templates (yet).
   template<typename... TSystems>
-  class Runtime : public TRuntime<TStorage, TSystems...> {
+  class Scene : public TRuntime<TStorage, TSystems...> {
   public:
     // This constructor effectively acts as a template deduction guide
     // (which unfortunately aren't supported by gcc yet (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79501))
     // to infer the system types from the constructor parameters.
     /// This is not supported by clang and will not be necessary anymore, once gcc supports deduction guides.
-    Runtime(TSystems&&... systems) :
+    Scene(TSystems&&... systems) :
       TRuntime<TStorage, TSystems...>(std::forward<decltype(systems)>(systems)...)
     {}
   };

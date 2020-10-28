@@ -80,7 +80,7 @@ namespace benchmark {
 template<typename... TSystems>
 class Scene {
 public:
-  using Runtime = ECS::Runtime<
+  using BaseScene = ECS::Scene<
     TSystems...,
     #if defined BENCHMARK_FRAMETIME
     benchmark::FrameTimeSystem<FRAME_COUNT>,
@@ -109,12 +109,12 @@ public:
     while (_running) _scene();
   }
 
-  operator Runtime&() {
+  operator BaseScene&() {
     return _scene;
   }
 
 private:
-  Runtime _scene;
+  BaseScene _scene;
   bool _running;
 };
 
