@@ -1,11 +1,11 @@
 import os
 
 class Benchmark:
-  def __init__(self, title, xlabel, ylabel, main, frames, runs, compile_params='', run_params='', tex_params='', ymax=None, dir='build/'):
+  def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/'):
     self.dir = dir
     os.mkdir(dir)
     self.__graph(title, xlabel, ylabel, main, frames, runs, ymax)
-    self.__makefile(main, frames, compile_params, run_params, tex_params, runs)
+    self.__makefile(main, frames, compile_params, run_params, tex_params, runs, instrument)
 
   def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None):
     # print('graph:', title, xlabel, ylabel, main, frames, runs)
@@ -52,7 +52,7 @@ class Benchmark:
       \addlegendentry{%name%}
     """.rstrip().replace('%name%', name).replace('%file%', filename) + '\n'
 
-  def __makefile(self, main, frames, compile_params, run_params, tex_params, runs):
+  def __makefile(self, main, frames, compile_params, run_params, tex_params, runs, instrument):
     file = open(self.dir + 'Makefile', 'x')
     file.write("""
 CC = g++
@@ -74,21 +74,39 @@ default: bench.pdf
       compile_params = run['compile_params'] if 'compile_params' in run else ''
       run_params = run['run_params'] if 'run_params' in run else ''
       tex_params = run['tex_params'] if 'tex_params' in run else ''
+      run_instrument = run['instrument'] if 'instrument' in run else instrument
       file.write("""
 %outfile%: %main% $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params%
-
-%texfile%: %outfile%
-	./%outfile% %run_params% | ../bench2tex.py %tex_params% > %texfile%
         """.strip()
         .replace('%main%', main)
         .replace('%compile_params%', compile_params)
-        .replace('%run_params%', run_params)
-        .replace('%tex_params%', tex_params)
         .replace('%outfile%', filename + '.out')
-        .replace('%texfile%', filename + '.tex')
         + '\n\n'
       )
+      if run_instrument == 'native':
+        file.write("""
+%texfile%: %outfile%
+	./%outfile% %run_params% | ../bench2tex.py %tex_params% > %texfile%
+          """.strip()
+          .replace('%run_params%', run_params)
+          .replace('%tex_params%', tex_params)
+          .replace('%outfile%', filename + '.out')
+          .replace('%texfile%', filename + '.tex')
+          + '\n\n'
+        )
+      elif run_instrument == 'perf':
+        file.write("""
+%texfile%: %outfile%
+	perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , ./%outfile%
+          """
+          .replace('%run_params%', run_params)
+          #.replace('%tex_params%', tex_params)
+          .replace('%outfile%', filename + '.out')
+          .replace('%texfile%', filename + '.tex')
+          .strip()
+          + '\n\n'
+        )
 
     file.write("""
 -include *.d
