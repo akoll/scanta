@@ -1,13 +1,13 @@
 import os
 
 class Benchmark:
-  def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/'):
+  def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/', ylabel_right='', ymax_right=None):
     self.dir = dir
     os.mkdir(dir)
-    self.__graph(title, xlabel, ylabel, main, frames, runs, ymax)
+    self.__graph(title, xlabel, ylabel, main, frames, runs, ymax, ylabel_right, ymax_right)
     self.__makefile(main, frames, compile_params, run_params, tex_params, runs, instrument)
 
-  def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None):
+  def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None, ylabel_right='', ymax_right=None):
     # print('graph:', title, xlabel, ylabel, main, frames, runs)
     print('graph {}: {}'.format(main, title))
     file = open(self.dir + 'graph.tex', 'x')
@@ -21,32 +21,56 @@ class Benchmark:
 
 \beginpgfgraphicnamed{bench}
   \begin{tikzpicture}
+    \pgfplotsset{set layers}
     \begin{axis}[
       title={\textbf{%title%}},
       width=12cm, height=8cm,
       axis lines=left,
       grid=major,
       xlabel={%xlabel%}, ylabel={%ylabel%},%ymax%
+      legend style={at={(0,-0.1)},anchor=north west}
     ]
 %runs%
     \end{axis}
-  \end{tikzpicture}
-\endpgfgraphicnamed
-
-\end{document}
       """.strip()
       .replace('%title%', title)
       .replace('%xlabel%', xlabel)
       .replace('%ylabel%', ylabel)
       .replace('%ymax%', ' ymax={},'.format(ymax) if ymax else '')
-      .replace('%runs%', '\n'.join([self.__plot(run) for run in runs]))
+      .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if 'side' not in runs[index] or runs[index]['side'] == 'left']))
+    )
+
+    if ylabel_right != '':
+      file.write(r"""
+      \begin{axis}[
+        width=12cm, height=8cm,
+        axis lines=right,
+        axis x line=none,
+        grid=major,
+        ylabel={%ylabel%},%ymax%
+        legend style={at={(1,-0.1)},anchor=north east}
+      ]
+  %runs%
+      \end{axis}
+        """.strip()
+        .replace('%ylabel%', ylabel)
+        .replace('%ymax%', ' ymax={},'.format(ymax_right) if ymax_right else '')
+        .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if 'side' in runs[index] and runs[index]['side'] == 'right']))
+      )
+
+    file.write(r"""
+  \end{tikzpicture}
+\endpgfgraphicnamed
+
+\end{document}
+      """.strip()
     )
     file.close()
 
-  def __plot(self, run):
+  def __plot(self, run, index):
     name = run['name']
     print('plot:', name)
-    filename = name.replace(' ', '_') + '.tex'
+    filename = str(index) + '_' + name.replace(' ', '_') + '.tex'
     return r"""
       \input{%file%}
       \addlegendentry{%name%}
@@ -68,7 +92,7 @@ default: bench.pdf
       + '\n\n'
     )
 
-    filenames = [run['name'].replace(' ', '_') for run in runs]
+    filenames = [str(index) + '_' + runs[index]['name'].replace(' ', '_') for index in range(len(runs))]
     for run, filename in zip(runs, filenames):
       name = run['name']
       compile_params = run['compile_params'] if 'compile_params' in run else ''
