@@ -127,7 +127,7 @@ clean:
     commands = '; '.join(['(./{} {}{})'.format(
       filename + '.out',
       step['params'],
-      ' | ../bench2avg.py' if 'average' in step and step['average'] else '',
+      ' | ../bench2avg.py' if ('average' in step and step['average']) or ('average' not in step and 'averages' in run and run['averages']) else '',
     ) for step in run['steps']])
     if (len(run['steps']) > 1):
       return '(' + commands + ')'
