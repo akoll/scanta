@@ -72,7 +72,6 @@ default: bench.pdf
     for run, filename in zip(runs, filenames):
       name = run['name']
       compile_params = run['compile_params'] if 'compile_params' in run else ''
-      run_params = run['run_params'] if 'run_params' in run else ''
       tex_params = run['tex_params'] if 'tex_params' in run else ''
       run_instrument = run['instrument'] if 'instrument' in run else instrument
       file.write("""
@@ -87,12 +86,12 @@ default: bench.pdf
       if run_instrument == 'native':
         file.write("""
 %texfile%: %outfile%
-	./%outfile% %run_params% | ../bench2tex.py %tex_params% > %texfile%
+	%steps% | ../bench2tex.py %tex_params% > %texfile%
           """.strip()
-          .replace('%run_params%', run_params)
           .replace('%tex_params%', tex_params)
           .replace('%outfile%', filename + '.out')
           .replace('%texfile%', filename + '.tex')
+          .replace('%steps%', self._render_steps(run, filename))
           + '\n\n'
         )
       elif run_instrument == 'perf':
@@ -115,7 +114,7 @@ bench.pdf: graph.tex %texs%
 	pdflatex --jobname=bench graph.tex
 
 clean:
-	rm -rf *.out *.d *.log *.aux %texs%
+	rm -rf bench.pdf *.out *.d *.log *.aux %texs%
 
 .PHONY: default run clean
       """.strip()
@@ -123,3 +122,14 @@ clean:
     )
       
     file.close()
+
+  def _render_steps(self, run, filename):
+    commands = '; '.join(['(./{} {}{})'.format(
+      filename + '.out',
+      step['params'],
+      ' | ../bench2avg.py' if 'average' in step and step['average'] else '',
+    ) for step in run['steps']])
+    if (len(run['steps']) > 1):
+      return '(' + commands + ')'
+    else:
+      return commands
