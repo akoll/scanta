@@ -3,14 +3,16 @@ import os
 class Benchmark:
   def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/', ylabel_right='', ymax_right=None):
     self.dir = dir
-    os.mkdir(dir)
+    if not os.path.exists(dir):
+      os.mkdir(dir)
     self.__graph(title, xlabel, ylabel, main, frames, runs, ymax, ylabel_right, ymax_right)
     self.__makefile(main, frames, compile_params, run_params, tex_params, runs, instrument)
 
   def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None, ylabel_right='', ymax_right=None):
     # print('graph:', title, xlabel, ylabel, main, frames, runs)
     print('graph {}: {}'.format(main, title))
-    file = open(self.dir + 'graph.tex', 'x')
+    file = open(self.dir + 'graph.tex', 'w')
+    file.seek(0)
     file.write(r"""
 \documentclass{article}
 \usepackage{graphics}
@@ -65,6 +67,7 @@ class Benchmark:
 \end{document}
       """.strip()
     )
+    file.truncate()
     file.close()
 
   def __plot(self, run, index):
@@ -77,7 +80,8 @@ class Benchmark:
     """.rstrip().replace('%name%', name).replace('%file%', filename) + '\n'
 
   def __makefile(self, main, frames, compile_params, run_params, tex_params, runs, instrument):
-    file = open(self.dir + 'Makefile', 'x')
+    file = open(self.dir + 'Makefile', 'w')
+    file.seek(0)
     file.write("""
 CC = g++
 CFLAGS = -Wall -std=c++2a -O3 -fopenmp
@@ -132,6 +136,7 @@ clean:
       .replace('%texs%', ' '.join([file + '.tex' for file in filenames]))
     )
       
+    file.truncate()
     file.close()
 
   def _render_steps(self, run, instrument, filename):
