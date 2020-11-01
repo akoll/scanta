@@ -113,6 +113,10 @@ public:
     return _scene;
   }
 
+  BaseScene* operator->() {
+    return &_scene;
+  }
+
 private:
   BaseScene _scene;
   bool _running;
