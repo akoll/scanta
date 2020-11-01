@@ -1,14 +1,15 @@
 import os
 
 class Benchmark:
-  def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/'):
+  def __init__(self, title, xlabel, ylabel, main, frames, executables, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/'):
     self.dir = dir
     os.mkdir(dir)
-    self.__graph(title, xlabel, ylabel, main, frames, runs, ymax)
-    self.__makefile(main, frames, compile_params, run_params, tex_params, runs, instrument)
+    self.__graph(title, xlabel, ylabel, main, frames, executables, ymax)
+    self.__makefile(main, frames, compile_params, run_params, tex_params, executables, instrument)
 
-  def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None):
+  def __graph(self, title, xlabel, ylabel, main, frames, executables, ymax=None):
     # print('graph:', title, xlabel, ylabel, main, frames, runs)
+    # runs = [run of executable in executables for run in executable['runs']]
     print('graph {}: {}'.format(main, title))
     file = open(self.dir + 'graph.tex', 'x')
     file.write(r"""
@@ -39,20 +40,21 @@ class Benchmark:
       .replace('%xlabel%', xlabel)
       .replace('%ylabel%', ylabel)
       .replace('%ymax%', ' ymax={},'.format(ymax) if ymax else '')
-      .replace('%runs%', '\n'.join([self.__plot(run) for run in runs]))
+      .replace('%runs%', '\n'.join([self.__plot(executable) for executable in executables]))
     )
     file.close()
 
-  def __plot(self, run):
-    name = run['name']
-    print('plot:', name)
-    filename = name.replace(' ', '_') + '.tex'
-    return r"""
+  def __plot(self, executable):
+    for index in range(len(executable['runs'])):
+      name = executable['name']
+      print('plot:', name)
+      filename = name.replace(' ', '_') + '_' + str(index) + '.tex'
+      return r"""
       \input{%file%}
       \addlegendentry{%name%}
-    """.rstrip().replace('%name%', name).replace('%file%', filename) + '\n'
+      """.rstrip().replace('%name%', name).replace('%file%', filename) + '\n'
 
-  def __makefile(self, main, frames, compile_params, run_params, tex_params, runs, instrument):
+  def __makefile(self, main, frames, compile_params, run_params, tex_params, executables, instrument):
     file = open(self.dir + 'Makefile', 'x')
     file.write("""
 CC = g++
@@ -68,45 +70,53 @@ default: bench.pdf
       + '\n\n'
     )
 
-    filenames = [run['name'].replace(' ', '_') for run in runs]
-    for run, filename in zip(runs, filenames):
-      name = run['name']
-      compile_params = run['compile_params'] if 'compile_params' in run else ''
-      run_params = run['run_params'] if 'run_params' in run else ''
-      tex_params = run['tex_params'] if 'tex_params' in run else ''
-      run_instrument = run['instrument'] if 'instrument' in run else instrument
+    filenames = [executable['name'].replace(' ', '_') for executable in executables]
+    for executable, filename in zip(executables, filenames):
+      name = executable['name']
+      compile_params = executable['compile_params'] if 'compile_params' in executable else ''
+      tex_params = executable['tex_params'] if 'tex_params' in executable else ''
       file.write("""
-%outfile%: %main% $(DEPS)
+%outfile%.out: %main% $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params%
+
+%outfile%: %outfile%.out
+	%runs%
+	: > kek.lel
         """.strip()
         .replace('%main%', main)
         .replace('%compile_params%', compile_params)
-        .replace('%outfile%', filename + '.out')
+        .replace('%outfile%', filename)
+        .replace('%runs%', '\n'.join(['make ' + filename + '_' + str(index) + '.tex && \\' for index in range(len(executable['runs']))]))
         + '\n\n'
       )
-      if run_instrument == 'native':
-        file.write("""
-%texfile%: %outfile%
-	./%outfile% %run_params% | ../bench2tex.py %tex_params% > %texfile%
-          """.strip()
-          .replace('%run_params%', run_params)
-          .replace('%tex_params%', tex_params)
-          .replace('%outfile%', filename + '.out')
-          .replace('%texfile%', filename + '.tex')
-          + '\n\n'
-        )
-      elif run_instrument == 'perf':
-        file.write("""
-%texfile%: %outfile%
-	perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , ./%outfile%
-          """
-          .replace('%run_params%', run_params)
-          #.replace('%tex_params%', tex_params)
-          .replace('%outfile%', filename + '.out')
-          .replace('%texfile%', filename + '.tex')
-          .strip()
-          + '\n\n'
-        )
+
+      for index in range(len(executable['runs'])):
+        run = executable['runs'][index]
+        run_params = run['run_params'] if 'run_params' in run else ''
+        run_instrument = run['instrument'] if 'instrument' in run else instrument
+        if run_instrument == 'native':
+          file.write("""
+  %texfile%: %outfile%
+    ./%outfile% %run_params% | ../bench2tex.py %tex_params% > %texfile%
+            """.strip()
+            .replace('%run_params%', run_params)
+            .replace('%tex_params%', tex_params)
+            .replace('%outfile%', filename + '.out')
+            .replace('%texfile%', filename + '_' + str(index) + '.tex')
+            + '\n\n'
+          )
+        elif run_instrument == 'perf':
+          file.write("""
+  %texfile%: %outfile%
+    perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , ./%outfile%
+            """
+            .replace('%run_params%', run_params)
+            #.replace('%tex_params%', tex_params)
+            .replace('%outfile%', filename + '.out')
+            .replace('%texfile%', filename + '_' + str(index) + '.tex')
+            .strip()
+            + '\n\n'
+          )
 
     file.write("""
 -include *.d
@@ -119,7 +129,7 @@ clean:
 
 .PHONY: default run clean
       """.strip()
-      .replace('%texs%', ' '.join([file + '.tex' for file in filenames]))
+      .replace('%texs%', ' '.join([filenames[exe_index] + '_' + str(run_index) + '.tex' for exe_index in range(len(executables)) for run_index in range(len(executables[exe_index]['runs']))]))
     )
       
     file.close()
