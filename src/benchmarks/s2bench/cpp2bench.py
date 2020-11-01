@@ -113,7 +113,7 @@ default: bench.pdf
 
       file.write("""
 %texfile%: %outfile%
-%steps% | ../bench2tex.py %tex_params% > %texfile%
+%steps% | ../s2bench/bench2tex.py %tex_params% > %texfile%
         """.strip()
         .replace('%tex_params%', tex_params)
         .replace('%outfile%', filename + '.out')
@@ -140,6 +140,9 @@ clean:
     file.close()
 
   def _render_steps(self, run, instrument, filename):
+    if 'steps' not in run:
+      run['steps'] = [{ 'params': '' }]
+
     run_instrument = run['instrument'] if 'instrument' in run else instrument
     def step_command(step):
       repetitions = step['repetitions'] if 'repetitions' in step else run['repetitions'] if 'repetitions' in run else 1
@@ -148,12 +151,12 @@ clean:
         step['params'],
       )
       if (run_instrument == 'perf'):
-        command = '(perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , -r {} {} 2>&1) | ../perf2bench.py'.format(repetitions, command)
+        command = '(perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , -r {} {} 2>&1) | ../s2bench/perf2bench.py'.format(repetitions, command)
       return command
 
     commands = '; '.join(['({}{})'.format(
       step_command(step),
-      ' | ../bench2avg.py' if ('average' in step and step['average']) or ('average' not in step and 'averages' in run and run['averages']) else '',
+      ' | ../s2bench/bench2avg.py' if ('average' in step and step['average']) or ('average' not in step and 'averages' in run and run['averages']) else '',
     ) for step in run['steps']])
     if (len(run['steps']) > 1):
       return '	(' + commands + ')'
