@@ -73,7 +73,6 @@ default: bench.pdf
       name = run['name']
       compile_params = run['compile_params'] if 'compile_params' in run else ''
       tex_params = run['tex_params'] if 'tex_params' in run else ''
-      run_instrument = run['instrument'] if 'instrument' in run else instrument
       file.write("""
 %outfile%: %main% $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params%
@@ -83,29 +82,17 @@ default: bench.pdf
         .replace('%outfile%', filename + '.out')
         + '\n\n'
       )
-      if run_instrument == 'native':
-        file.write("""
+
+      file.write("""
 %texfile%: %outfile%
-	%steps% | ../bench2tex.py %tex_params% > %texfile%
-          """.strip()
-          .replace('%tex_params%', tex_params)
-          .replace('%outfile%', filename + '.out')
-          .replace('%texfile%', filename + '.tex')
-          .replace('%steps%', self._render_steps(run, filename))
-          + '\n\n'
-        )
-      elif run_instrument == 'perf':
-        file.write("""
-%texfile%: %outfile%
-	perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , ./%outfile%
-          """
-          .replace('%run_params%', run_params)
-          #.replace('%tex_params%', tex_params)
-          .replace('%outfile%', filename + '.out')
-          .replace('%texfile%', filename + '.tex')
-          .strip()
-          + '\n\n'
-        )
+%steps% | ../bench2tex.py %tex_params% > %texfile%
+        """.strip()
+        .replace('%tex_params%', tex_params)
+        .replace('%outfile%', filename + '.out')
+        .replace('%texfile%', filename + '.tex')
+        .replace('%steps%', self._render_steps(run, instrument, filename))
+        + '\n\n'
+      )
 
     file.write("""
 -include *.d
@@ -123,13 +110,23 @@ clean:
       
     file.close()
 
-  def _render_steps(self, run, filename):
-    commands = '; '.join(['(./{} {}{})'.format(
-      filename + '.out',
-      step['params'],
+  def _render_steps(self, run, instrument, filename):
+    run_instrument = run['instrument'] if 'instrument' in run else instrument
+    def step_command(step):
+      repetitions = step['repetitions'] if 'repetitions' in step else run['repetitions'] if 'repetitions' in run else 1
+      command = '{} {}'.format(
+        './' + filename + '.out',
+        step['params'],
+      )
+      if (run_instrument == 'perf'):
+        command = '(perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , -r {} {} 2>&1) | ../perf2bench.py'.format(repetitions, command)
+      return command
+
+    commands = '; '.join(['({}{})'.format(
+      step_command(step),
       ' | ../bench2avg.py' if ('average' in step and step['average']) or ('average' not in step and 'averages' in run and run['averages']) else '',
     ) for step in run['steps']])
     if (len(run['steps']) > 1):
-      return '(' + commands + ')'
+      return '	(' + commands + ')'
     else:
-      return commands
+      return '	' + commands
