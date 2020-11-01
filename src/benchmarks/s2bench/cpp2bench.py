@@ -29,6 +29,7 @@ class Benchmark:
       width=12cm, height=8cm,
       axis lines=left,
       grid=major,
+      mark size=0.4mm,
       xlabel={%xlabel%}, ylabel={%ylabel%},%ymax%
       legend style={at={(0,-0.1)},anchor=north west}
     ]
@@ -49,6 +50,7 @@ class Benchmark:
         axis lines=right,
         axis x line=none,
         grid=major,
+        mark size=0.4mm,
         ylabel={%ylabel%},%ymax%
         legend style={at={(1,-0.1)},anchor=north east}
       ]
