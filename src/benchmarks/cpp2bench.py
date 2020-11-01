@@ -55,7 +55,7 @@ class Benchmark:
   %runs%
       \end{axis}
         """.strip()
-        .replace('%ylabel%', ylabel)
+        .replace('%ylabel%', ylabel_right)
         .replace('%ymax%', ' ymax={},'.format(ymax_right) if ymax_right else '')
         .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if 'side' in runs[index] and runs[index]['side'] == 'right']))
       )
