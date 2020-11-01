@@ -4,7 +4,7 @@ class Benchmark:
   def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/', ylabel_right='', ymax_right=None):
     self.dir = dir
     if not os.path.exists(dir):
-      os.mkdir(dir)
+      os.makedirs(dir)
     self.__graph(title, xlabel, ylabel, main, frames, runs, ymax, ylabel_right, ymax_right)
     self.__makefile(main, frames, compile_params, run_params, tex_params, runs, instrument)
 
