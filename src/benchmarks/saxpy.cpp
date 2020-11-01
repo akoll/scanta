@@ -23,25 +23,13 @@ private:
   float a;
 };
 
-class SpawnSystem {
-public:
-  auto operator()() const {
-    return [](const auto& manager) {
-      for (auto i{0u}; i < SPAWN_RATE; ++i)
-        manager.new_entity(X{3.1416f}, Y{1.68f});
-    };
-  }
-};
-  
 int main(int argc, const char** argv) {
-  benchmark::Scene scene(
-    SaxpySystem(9.81f),
-    SpawnSystem{}
-  );
+  if (argc <= 1) return 1;
+  unsigned int count = atoi(argv[1]);
 
-  for (auto i{0u}; i < INITIAL_COUNT; ++i)
+  benchmark::Scene scene(SaxpySystem(9.81f));
+  for (auto i{0u}; i < count; ++i)
     scene->manager.new_entity(X{3.1416f}, Y{1.68f});
-
   scene.run();
   return 0;
 }

@@ -1,5 +1,9 @@
 from s2bench.cpp2bench import Benchmark
 
+initial = 32000
+rate = 1024
+steps = [{ 'params': str(initial + i * rate) } for i in range(10)]
+
 benchmark = Benchmark(
   dir='saxpy/',
   title='saxpy - parallel',
@@ -8,17 +12,21 @@ benchmark = Benchmark(
   main='../saxpy.cpp',
   frames=1000,
   instrument='native',
-  compile_params='-DRUNTIME_PARALLEL -DINITIAL_COUNT=100000 -DSPAWN_RATE=1024 -DWIDTH=128',
+  compile_params='-DRUNTIME_PARALLEL -DSPAWN_RATE=1024 -DWIDTH=128',
   runs=[
     {
       'name': 'tuple of vectors',
       'compile_params': '-DBENCHMARK_FRAMETIME -DSTORAGE_TOV',
-      'tex_params': 'orange 1024 100000',
+      'tex_params': 'orange,thick,mark=* {} {}'.format(rate, initial),
+      'averages': True,
+      'steps': steps,
     },
     {
       'name': 'vector of tuples',
       'compile_params': '-DBENCHMARK_FRAMETIME -DSTORAGE_VOT',
-      'tex_params': 'blue 1024 100000',
+      'tex_params': 'blue,thick,mark=* {} {}'.format(rate, initial),
+      'averages': True,
+      'steps': steps,
     },
   ]
 )
