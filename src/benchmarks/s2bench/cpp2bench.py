@@ -1,14 +1,14 @@
 import os
 
 class Benchmark:
-  def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/', ylabel_right='', ymax_right=None):
+  def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/', ylabel_right='', ymax_right=None, axis_params='', axis_params_right=''):
     self.dir = dir
     if not os.path.exists(dir):
       os.makedirs(dir)
-    self.__graph(title, xlabel, ylabel, main, frames, runs, ymax, ylabel_right, ymax_right)
+    self.__graph(title, xlabel, ylabel, main, frames, runs, ymax, ylabel_right, ymax_right, axis_params, axis_params_right)
     self.__makefile(main, frames, compile_params, run_params, tex_params, runs, instrument)
 
-  def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None, ylabel_right='', ymax_right=None):
+  def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None, ylabel_right='', ymax_right=None, axis_params='', axis_params_right=''):
     # print('graph:', title, xlabel, ylabel, main, frames, runs)
     print('graph {}: {}'.format(main, title))
     file = open(self.dir + 'graph.tex', 'w')
@@ -18,6 +18,7 @@ class Benchmark:
 \usepackage{graphics}
 \usepackage{tikz}
 \usepackage{pgfplots}
+\usepgfplotslibrary{units}
 
 \begin{document}
 
@@ -31,7 +32,8 @@ class Benchmark:
       grid=major,
       mark size=0.4mm,
       xlabel={%xlabel%}, ylabel={%ylabel%},%ymax%
-      legend style={at={(0,-0.1)},anchor=north west}
+      legend style={at={(0,-0.1)},anchor=north west},
+      %axis_params%
     ]
 %runs%
     \end{axis}
@@ -40,6 +42,7 @@ class Benchmark:
       .replace('%xlabel%', xlabel)
       .replace('%ylabel%', ylabel)
       .replace('%ymax%', ' ymax={},'.format(ymax) if ymax else '')
+      .replace('%axis_params%', axis_params)
       .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if 'side' not in runs[index] or runs[index]['side'] == 'left']))
     )
 
@@ -53,12 +56,14 @@ class Benchmark:
         mark size=0.4mm,
         ylabel={%ylabel%},%ymax%
         legend style={at={(1,-0.1)},anchor=north east}
+        %axis_params%
       ]
   %runs%
       \end{axis}
         """.strip()
         .replace('%ylabel%', ylabel_right)
         .replace('%ymax%', ' ymax={},'.format(ymax_right) if ymax_right else '')
+      .replace('%axis_params%', axis_params_right)
         .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if 'side' in runs[index] and runs[index]['side'] == 'right']))
       )
 

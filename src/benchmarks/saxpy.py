@@ -9,6 +9,7 @@ benchmark = Benchmark(
   title='saxpy - parallel',
   xlabel='entity count',
   ylabel='frame time',
+  axis_params='change y base, y SI prefix=milli, y unit=s',
   main='../saxpy.cpp',
   frames=1000,
   instrument='native',
