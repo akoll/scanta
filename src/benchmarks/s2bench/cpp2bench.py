@@ -109,7 +109,9 @@ default: bench.pdf
       compile_params = run['compile_params'] if 'compile_params' in run else ''
       tex_params = run['tex_params'] if 'tex_params' in run else ''
 
-      for step_index in range(len(run['steps'])):
+      homogenous = len([step for step in run['steps'] if 'compile_params' in step]) == 0
+      run['homogenous'] = homogenous
+      for step_index in (range(len(run['steps'])) if not homogenous else range(1)):
         step_cparams = run['steps'][step_index]['compile_params'] if 'compile_params' in run['steps'][step_index] else ''
         file.write("""
 %outfile%: %main% $(DEPS)
@@ -117,7 +119,7 @@ default: bench.pdf
           """.strip()
           .replace('%main%', main)
           .replace('%compile_params%', '{} {}'.format(compile_params, step_cparams))
-          .replace('%outfile%', filename + '_' + str(step_index) +  '.out')
+          .replace('%outfile%', filename + ('_' + str(step_index) if not homogenous else '') +  '.out')
           + '\n\n'
         )
 
@@ -126,7 +128,7 @@ default: bench.pdf
 %steps% | ../s2bench/bench2tex.py %tex_params% > %texfile%
         """.strip()
         .replace('%tex_params%', tex_params)
-        .replace('%outfiles%', ' '.join([filename + '_' + str(index) + '.out' for index in range(len(run['steps']))]))
+        .replace('%outfiles%', ' '.join(([filename + '_' + str(index) + '.out' for index in range(len(run['steps']))] if not homogenous else [filename + '.out'])))
         .replace('%texfile%', filename + '.tex')
         .replace('%steps%', self._render_steps(run, instrument, filename))
         + '\n\n'
@@ -158,7 +160,7 @@ clean:
       step = run['steps'][index]
       repetitions = step['repetitions'] if 'repetitions' in step else run['repetitions'] if 'repetitions' in run else 1
       command = '{} {}'.format(
-        './' + filename + '_' + str(index) + '.out',
+        './' + filename + ('_' + str(index) if not run['homogenous'] else '') + '.out',
         step['params'],
       )
       if (run_instrument == 'perf'):
