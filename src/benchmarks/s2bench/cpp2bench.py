@@ -163,6 +163,8 @@ clean:
       )
       if (run_instrument == 'perf'):
         command = '(perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , -r {} {} 2>&1) | ../s2bench/perf2bench.py'.format(repetitions, command)
+      elif (run_instrument == 'frameavg'):
+        command = '(for _ in {1..%s}; do %s; done) | ../s2bench/bench2avg.py %s' % (repetitions, command, repetitions)
       return command
 
     commands = '; '.join(['({}{})'.format(
