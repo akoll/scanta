@@ -1,7 +1,7 @@
 from s2bench.cpp2bench import Benchmark
 
 initial = 32000
-rate = 1024
+rate = 1000
 steps = [{ 'params': str(initial + i * rate) } for i in range(10)]
 
 benchmark = Benchmark(
@@ -13,7 +13,7 @@ benchmark = Benchmark(
   main='../saxpy.cpp',
   frames=1000,
   instrument='native',
-  compile_params='-DRUNTIME_PARALLEL -DSPAWN_RATE=1024 -DWIDTH=128',
+  compile_params='-DRUNTIME_PARALLEL -DSPAWN_RATE=1000 -DWIDTH=128',
   runs=[
     {
       'name': 'tuple of vectors',
