@@ -1,14 +1,14 @@
 import os
 
 class Benchmark:
-  def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/', ylabel_right='', ymax_right=None, axis_params='', axis_params_right=''):
+  def __init__(self, title, xlabel, ylabel, main, frames, runs, instrument='native', compile_params='', run_params='', tex_params='', ymax=None, dir='build/', ylabel_right='', ymax_right=None, axis_params='', axis_params_right='', arrowheads=True):
     self.dir = dir
     if not os.path.exists(dir):
       os.makedirs(dir)
-    self.__graph(title, xlabel, ylabel, main, frames, runs, ymax, ylabel_right, ymax_right, axis_params, axis_params_right)
+    self.__graph(title, xlabel, ylabel, main, frames, runs, ymax, ylabel_right, ymax_right, axis_params, axis_params_right, arrowheads)
     self.__makefile(main, frames, compile_params, run_params, tex_params, runs, instrument)
 
-  def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None, ylabel_right='', ymax_right=None, axis_params='', axis_params_right=''):
+  def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None, ylabel_right='', ymax_right=None, axis_params='', axis_params_right='', arrowheads=True):
     # print('graph:', title, xlabel, ylabel, main, frames, runs)
     print('graph {}: {}'.format(main, title))
     file = open(self.dir + 'graph.tex', 'w')
@@ -28,7 +28,7 @@ class Benchmark:
     \begin{axis}[
       title={\textbf{%title%}},
       width=12cm, height=8cm,
-      axis lines=left,
+      axis lines%star%=left,
       grid=major,
       mark size=0.4mm,
       xlabel={%xlabel%}, ylabel={%ylabel%},%ymax%
@@ -42,6 +42,7 @@ class Benchmark:
       .replace('%ylabel%', ylabel)
       .replace('%ymax%', ' ymax={},'.format(ymax) if ymax else '')
       .replace('%axis_params%', axis_params)
+      .replace('%star%', '*' if not arrowheads else '')
       .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if 'side' not in runs[index] or runs[index]['side'] == 'left']))
     )
 
@@ -49,7 +50,7 @@ class Benchmark:
       file.write(r"""
       \begin{axis}[
         width=12cm, height=8cm,
-        axis lines=right,
+        axis lines%star%=right,
         axis x line=none,
         %grid=major,
         mark size=0.4mm,
@@ -62,6 +63,7 @@ class Benchmark:
         .replace('%ylabel%', ylabel_right)
         .replace('%ymax%', ' ymax={},'.format(ymax_right) if ymax_right else '')
         .replace('%axis_params%', axis_params_right)
+        .replace('%star%', '*' if not arrowheads else '')
         .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if 'side' in runs[index] and runs[index]['side'] == 'right']))
       )
 
@@ -122,7 +124,7 @@ default: bench.pdf
         )
 
       file.write("""
-%texfile%: graph.tex %outfiles%
+%texfile%: %outfiles%
 %steps% | ../s2bench/bench2tex.py %tex_params% > %texfile%
         """.strip()
         .replace('%tex_params%', tex_params)
@@ -152,13 +154,17 @@ clean:
   def _render_steps(self, run, instrument, filename):
     if 'steps' not in run:
       run['steps'] = [{ 'params': run['run_params'] if 'run_params' in run else '' }]
+    for step in run['steps']:
+      if 'params' not in step:
+        step['params'] = ''
 
     run_instrument = run['instrument'] if 'instrument' in run else instrument
     def step_command(index):
       step = run['steps'][index]
       repetitions = step['repetitions'] if 'repetitions' in step else run['repetitions'] if 'repetitions' in run else 1
-      command = '{} {}'.format(
+      command = '{} {} {}'.format(
         './' + filename + ('_' + str(index) if not run['homogenous'] else '') + '.out',
+        run['run_params'] if 'run_params' in run else '',
         step['params'],
       )
       if (run_instrument == 'perf'):
