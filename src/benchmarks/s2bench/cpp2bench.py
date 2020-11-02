@@ -108,22 +108,25 @@ default: bench.pdf
       name = run['name']
       compile_params = run['compile_params'] if 'compile_params' in run else ''
       tex_params = run['tex_params'] if 'tex_params' in run else ''
-      file.write("""
+
+      for step_index in range(len(run['steps'])):
+        step_cparams = run['steps'][step_index]['compile_params'] if 'compile_params' in run['steps'][step_index] else ''
+        file.write("""
 %outfile%: %main% $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params%
-        """.strip()
-        .replace('%main%', main)
-        .replace('%compile_params%', compile_params)
-        .replace('%outfile%', filename + '.out')
-        + '\n\n'
-      )
+          """.strip()
+          .replace('%main%', main)
+          .replace('%compile_params%', '{} {}'.format(compile_params, step_cparams))
+          .replace('%outfile%', filename + '_' + str(step_index) +  '.out')
+          + '\n\n'
+        )
 
       file.write("""
-%texfile%: %outfile%
+%texfile%: %outfiles%
 %steps% | ../s2bench/bench2tex.py %tex_params% > %texfile%
         """.strip()
         .replace('%tex_params%', tex_params)
-        .replace('%outfile%', filename + '.out')
+        .replace('%outfiles%', ' '.join([filename + '_' + str(index) + '.out' for index in range(len(run['steps']))]))
         .replace('%texfile%', filename + '.tex')
         .replace('%steps%', self._render_steps(run, instrument, filename))
         + '\n\n'
@@ -151,10 +154,11 @@ clean:
       run['steps'] = [{ 'params': '' }]
 
     run_instrument = run['instrument'] if 'instrument' in run else instrument
-    def step_command(step):
+    def step_command(index):
+      step = run['steps'][index]
       repetitions = step['repetitions'] if 'repetitions' in step else run['repetitions'] if 'repetitions' in run else 1
       command = '{} {}'.format(
-        './' + filename + '.out',
+        './' + filename + '_' + str(index) + '.out',
         step['params'],
       )
       if (run_instrument == 'perf'):
@@ -162,9 +166,9 @@ clean:
       return command
 
     commands = '; '.join(['({}{})'.format(
-      step_command(step),
-      ' | ../s2bench/bench2avg.py' if ('average' in step and step['average']) or ('average' not in step and 'averages' in run and run['averages']) else '',
-    ) for step in run['steps']])
+      step_command(index),
+      ' | ../s2bench/bench2avg.py' if ('average' in run['steps'][index] and run['steps'][index]['average']) or ('average' not in run['steps'][index] and 'averages' in run and run['averages']) else '',
+    ) for index in range(len(run['steps']))])
     if (len(run['steps']) > 1):
       return '	(' + commands + ')'
     else:
