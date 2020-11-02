@@ -107,10 +107,10 @@ default: bench.pdf
       compile_params = run['compile_params'] if 'compile_params' in run else ''
       tex_params = run['tex_params'] if 'tex_params' in run else ''
 
-      homogenous = len([step for step in run['steps'] if 'compile_params' in step]) == 0
+      homogenous = 'steps' not in run or len([step for step in run['steps'] if 'compile_params' in step]) == 0
       run['homogenous'] = homogenous
       for step_index in (range(len(run['steps'])) if not homogenous else range(1)):
-        step_cparams = run['steps'][step_index]['compile_params'] if 'compile_params' in run['steps'][step_index] else ''
+        step_cparams = run['steps'][step_index]['compile_params'] if 'steps' in run and 'compile_params' in run['steps'][step_index] else ''
         file.write("""
 %outfile%: %main% $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params%
@@ -122,7 +122,7 @@ default: bench.pdf
         )
 
       file.write("""
-%texfile%: %outfiles%
+%texfile%: graph.tex %outfiles%
 %steps% | ../s2bench/bench2tex.py %tex_params% > %texfile%
         """.strip()
         .replace('%tex_params%', tex_params)
@@ -136,7 +136,7 @@ default: bench.pdf
 -include *.d
 
 bench.pdf: graph.tex %texs%
-	pdflatex --jobname=bench graph.tex
+	lualatex --jobname=bench graph.tex
 
 clean:
 	rm -rf bench.pdf *.out *.d *.log *.aux %texs%
@@ -151,7 +151,7 @@ clean:
 
   def _render_steps(self, run, instrument, filename):
     if 'steps' not in run:
-      run['steps'] = [{ 'params': '' }]
+      run['steps'] = [{ 'params': run['run_params'] if 'run_params' in run else '' }]
 
     run_instrument = run['instrument'] if 'instrument' in run else instrument
     def step_command(index):
