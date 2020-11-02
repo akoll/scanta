@@ -32,8 +32,7 @@ class Benchmark:
       grid=major,
       mark size=0.4mm,
       xlabel={%xlabel%}, ylabel={%ylabel%},%ymax%
-      legend style={at={(0,-0.1)},anchor=north west},
-      %axis_params%
+      legend style={at={(0,-0.1)},anchor=north west},%axis_params%
     ]
 %runs%
     \end{axis}
@@ -55,15 +54,14 @@ class Benchmark:
         grid=major,
         mark size=0.4mm,
         ylabel={%ylabel%},%ymax%
-        legend style={at={(1,-0.1)},anchor=north east}
-        %axis_params%
+        legend style={at={(1,-0.1)},anchor=north east},%axis_params%
       ]
   %runs%
       \end{axis}
         """.strip()
         .replace('%ylabel%', ylabel_right)
         .replace('%ymax%', ' ymax={},'.format(ymax_right) if ymax_right else '')
-      .replace('%axis_params%', axis_params_right)
+        .replace('%axis_params%', axis_params_right)
         .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if 'side' in runs[index] and runs[index]['side'] == 'right']))
       )
 

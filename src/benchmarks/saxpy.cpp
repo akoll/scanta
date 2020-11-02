@@ -14,7 +14,11 @@ class SaxpySystem {
 public:
   SaxpySystem(float a) : a(a) {}
 
-  void operator()(const X& x, Y& y) const {
+  void operator()(const X& x, Y& y)
+  #ifdef INNER_PARALLELISM
+    const
+  #endif
+  {
     for (auto i{0u}; i < WIDTH; ++i)
       y.values[i] = a * x.values[i] + y.values[i];
   }
