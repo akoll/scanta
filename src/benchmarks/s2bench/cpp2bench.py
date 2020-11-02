@@ -51,7 +51,7 @@ class Benchmark:
         width=12cm, height=8cm,
         axis lines=right,
         axis x line=none,
-        grid=major,
+        %grid=major,
         mark size=0.4mm,
         ylabel={%ylabel%},%ymax%
         legend style={at={(1,-0.1)},anchor=north east},%axis_params%
