@@ -173,9 +173,10 @@ clean:
         command = '(for _ in {1..%s}; do %s; done) | ../s2bench/bench2avg.py %s' % (repetitions, command, repetitions)
       return command
 
-    commands = '; '.join(['({}{})'.format(
+    commands = '; '.join(['({}{}{})'.format(
       step_command(index),
       ' | ../s2bench/bench2avg.py' if ('average' in run['steps'][index] and run['steps'][index]['average']) or ('average' not in run['steps'][index] and 'averages' in run and run['averages']) else '',
+      ' | ../s2bench/bench2max.py' if ('max' in run['steps'][index] and run['steps'][index]['max']) or ('max' not in run['steps'][index] and 'maxes' in run and run['maxes']) else '',
     ) for index in range(len(run['steps']))])
     if (len(run['steps']) > 1):
       return '	(' + commands + ')'
