@@ -157,14 +157,15 @@ clean:
     for step in run['steps']:
       if 'params' not in step:
         step['params'] = ''
+      else:
+        step['params'] = run['run_params'] if 'run_params' in run else '' + ' ' + step['params']
 
     run_instrument = run['instrument'] if 'instrument' in run else instrument
     def step_command(index):
       step = run['steps'][index]
       repetitions = step['repetitions'] if 'repetitions' in step else run['repetitions'] if 'repetitions' in run else 1
-      command = '{} {} {}'.format(
+      command = '{} {}'.format(
         './' + filename + ('_' + str(index) if not run['homogenous'] else '') + '.out',
-        run['run_params'] if 'run_params' in run else '',
         step['params'],
       )
       if (run_instrument == 'perf'):
