@@ -73,6 +73,20 @@ namespace ecs::storage {
       /// Constructor for converting from plain void-pointers.
       Entity(VoidPointer pointer) : _pointer(pointer) {}
     };
+
+    template<typename... TRequiredComponents>
+    void for_entities_with(auto&& callable) const {
+      if (sizeof...(TRequiredComponents) == 0)
+        callable(Entity(nullptr));
+    }
+
+    template<typename... TRequiredComponents>
+    void for_entities_with_parallel(auto&& callable) const {
+      if (sizeof...(TRequiredComponents) == 0)
+        callable(Entity(nullptr));
+    }
+
+    void new_entity(auto&&...) const {}
   };
 
   /// Stores components and entity metadata in dynamically allocated and scattered heap regions.
