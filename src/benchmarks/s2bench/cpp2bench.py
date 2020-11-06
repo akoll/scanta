@@ -6,10 +6,40 @@ class Step:
     compile_params='',
     params='',
     repetitions=1,
+    avg=False,
+    max=False
   ):
     self.compile_params = compile_params
     self.params = params
     self.repetitions = repetitions
+    self.avg = avg
+    self.max = max
+
+class Plot:
+  def __init__(
+    self,
+    name,
+    title=None,
+    side='left',
+    tex_params='black',
+    avg=False,
+    max=False,
+  ):
+    self.name = name
+    if title == None:
+      self.title = name
+    else:
+      self.title = title
+    self.side = side
+    self.tex_params = tex_params
+    self.avg = avg
+    self.max = max
+
+  def generate_post_processing(self):
+    return '{}{}'.format(
+      ' | ../s2bench/bench2avg.py' if self.avg else '',
+      ' | ../s2bench/bench2max.py' if self.max else ''
+    )
 
 class Run:
   def __init__(
@@ -17,16 +47,13 @@ class Run:
     name,
     compile_params='',
     run_params='',
-    tex_params='',
-    side='left',
     steps=None,
+    plots=None,
     instrument='native'
   ):
     self.name = name
     self.compile_params = compile_params
     self.run_params = run_params
-    self.tex_params = tex_params
-    self.side = side
     self.instrument = instrument
 
     if steps == None:
@@ -36,8 +63,31 @@ class Run:
     else:
       self.steps = steps
 
+    if plots == None:
+      self.plots = [
+        Plot('default')
+      ]
+    else:
+      self.plots = plots
+
   def is_homogenous(self):
     return len([step for step in self.steps if step.compile_params != self.steps[0].compile_params]) == 0
+
+  def generate_graph_includes(self, side):
+    def include(plot, index):
+      filename = '{}_{}_{}.tex'.format(
+        str(index),
+        self.name.replace(' ', '_'),
+        plot.name.replace(' ', '_')
+      )
+      return r"""
+        \input{%file%}
+        \addlegendentry{%title%}
+      """.rstrip().replace('%title%', plot.title).replace('%file%', filename) + '\n'
+
+    return '\n'.join([include(self.plots[index], index) for index in range(len(self.plots)) if self.plots[index].side == side])
+
+
 
 class Benchmark:
   def __init__(
@@ -104,7 +154,7 @@ class Benchmark:
       xlabel={%xlabel%}, ylabel={%ylabel%},
       legend style={at={(0,-0.1)},anchor=north west},%axis_params%
     ]
-%runs%
+%plots%
     \end{axis}
       """.strip()
       .replace('%title%', self.title)
@@ -112,7 +162,7 @@ class Benchmark:
       .replace('%ylabel%', self.ylabel)
       .replace('%axis_params%', self.axis_params)
       .replace('%star%', '*' if not self.arrowheads else '')
-      .replace('%runs%', '\n'.join([self.__plot(self.runs[index], index) for index in range(len(self.runs)) if self.runs[index].side == 'left']))
+      .replace('%plots%', '\n'.join([run.generate_graph_includes('left') for run in self.runs]))
     )
 
     if self.ylabel_right != '':
@@ -126,13 +176,13 @@ class Benchmark:
         ylabel={%ylabel%},
         legend style={at={(1,-0.1)},anchor=north east},%axis_params%
       ]
-  %runs%
+  %plots%
       \end{axis}
         """.strip()
         .replace('%ylabel%', self.ylabel_right)
         .replace('%axis_params%', self.axis_params_right)
         .replace('%star%', '*' if not self.arrowheads else '')
-        .replace('%runs%', '\n'.join([self.__plot(self.runs[index], index) for index in range(len(self.runs)) if self.runs[index].side == 'right']))
+      .replace('%plots%', '\n'.join([run.generate_graph_includes('right') for run in self.runs]))
       )
 
     file.write(r"""
@@ -144,14 +194,6 @@ class Benchmark:
     )
     file.truncate()
     file.close()
-
-  def __plot(self, run, index):
-    print('plot:', run.name)
-    filename = str(index) + '_' + run.name.replace(' ', '_') + '.tex'
-    return r"""
-      \input{%file%}
-      \addlegendentry{%name%}
-    """.rstrip().replace('%name%', run.name).replace('%file%', filename) + '\n'
 
   def __makefile(self):
     file = open(self.dir + 'Makefile', 'w')
@@ -172,6 +214,7 @@ default: bench.pdf
 
     filenames = [str(index) + '_' + self.runs[index].name.replace(' ', '_') for index in range(len(self.runs))]
     for run, filename in zip(self.runs, filenames):
+      print('run:', run.name)
 
       for step_index in (range(len(run['steps'])) if not run.is_homogenous() else range(1)):
         step_cparams = run.steps[step_index].compile_params
@@ -195,15 +238,19 @@ default: bench.pdf
         + '\n\n'
       )
 
-      file.write("""
+      for plot in run.plots:
+        print('plot:', plot.name)
+
+        file.write("""
 %texfile%: %benchfile%
-	cat %benchfile% | ../s2bench/bench2tex.py %tex_params% > %texfile%
-        """.strip()
-        .replace('%tex_params%', run.tex_params)
-        .replace('%texfile%', filename + '.tex')
-        .replace('%benchfile%', filename + '.bench')
-        + '\n\n'
-      )
+	cat %benchfile% |%postproc% ../s2bench/bench2tex.py %tex_params% > %texfile%
+          """.strip()
+          .replace('%tex_params%', plot.tex_params)
+          .replace('%texfile%', filename + '_' + plot.name.replace(' ', '_') + '.tex')
+          .replace('%benchfile%', filename + '.bench')
+          .replace('%postproc%', plot.generate_post_processing())
+          + '\n\n'
+        )
 
     file.write("""
 -include *.d
@@ -236,8 +283,10 @@ clean:
         command = '(for _ in {1..%s}; do %s; done) | ../s2bench/bench2avg.py %s' % (step.repetitions, command, step.repetitions)
       return command
 
-    commands = '; '.join(['({})'.format(
+    commands = '; '.join(['({}{}{})'.format(
       step_command(index),
+       ' | ../s2bench/bench2avg.py' if (run.steps[index].avg) else '',
+       ' | ../s2bench/bench2max.py' if (run.steps[index].max) else '',
     ) for index in range(len(run.steps))])
     if (len(run.steps) > 1):
       return '	(' + commands + ')'
