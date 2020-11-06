@@ -65,7 +65,7 @@ class Run:
 
     if plots == None:
       self.plots = [
-        Plot('default')
+        Plot('default', title=name)
       ]
     else:
       self.plots = plots
@@ -263,7 +263,7 @@ clean:
 
 .PHONY: default run clean
       """.strip()
-      .replace('%texs%', ' '.join([file + '.tex' for file in filenames]))
+      .replace('%texs%', ' '.join([file + '_' + plot.name.replace(' ', '_') + '.tex' for run, file in zip(self.runs, filenames) for plot in run.plots]))
     )
       
     file.truncate()
