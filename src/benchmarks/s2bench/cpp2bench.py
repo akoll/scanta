@@ -19,6 +19,7 @@ class Plot:
   def __init__(
     self,
     name,
+    runs,
     title=None,
     side='left',
     tex_params='black',
@@ -26,6 +27,7 @@ class Plot:
     max=False,
   ):
     self.name = name
+    self.runs = runs
     if title == None:
       self.title = name
     else:
@@ -41,6 +43,9 @@ class Plot:
       ' | ../s2bench/bench2max.py' if self.max else ''
     )
 
+  def generate_commands(self):
+    return '; '.join(['cat ' + run.name.replace(' ', '_') + '.bench' for run in self.runs])
+
 class Run:
   def __init__(
     self,
@@ -48,7 +53,6 @@ class Run:
     compile_params='',
     run_params='',
     steps=None,
-    plots=None,
     instrument='native'
   ):
     self.name = name
@@ -63,31 +67,8 @@ class Run:
     else:
       self.steps = steps
 
-    if plots == None:
-      self.plots = [
-        Plot('default', title=name)
-      ]
-    else:
-      self.plots = plots
-
   def is_homogenous(self):
     return len([step for step in self.steps if step.compile_params != self.steps[0].compile_params]) == 0
-
-  def generate_graph_includes(self, index, side):
-    def include(plot):
-      filename = '{}_{}_{}.tex'.format(
-        str(index),
-        self.name.replace(' ', '_'),
-        plot.name.replace(' ', '_')
-      )
-      return r"""
-        \input{%file%}
-        \addlegendentry{%title%}
-      """.rstrip().replace('%title%', plot.title).replace('%file%', filename) + '\n'
-
-    return '\n'.join([include(plot) for plot in self.plots if plot.side == side])
-
-
 
 class Benchmark:
   def __init__(
@@ -97,7 +78,8 @@ class Benchmark:
     ylabel,
     main,
     frames,
-    runs,
+    runs=[],
+    plots=[],
     compile_params='',
     run_params='',
     tex_params='',
@@ -113,6 +95,7 @@ class Benchmark:
     self.main = main
     self.frames = frames
     self.runs = runs
+    self.plots = plots
     self.compile_params = compile_params
     self.run_params = run_params
     self.tex_params = tex_params
@@ -127,6 +110,19 @@ class Benchmark:
       os.makedirs(self.dir)
     self.__graph()
     self.__makefile()
+
+  def __generate_graph_includes(self, side):
+    def include(plot):
+      filename = '{}.tex'.format(
+        plot.name.replace(' ', '_')
+      )
+      return r"""
+        \input{%file%}
+        \addlegendentry{%title%}
+      """.rstrip().replace('%title%', plot.title).replace('%file%', filename) + '\n'
+
+    return '\n'.join([include(plot) for plot in self.plots if plot.side == side])
+
 
   def __graph(self):
     # print('graph:', title, xlabel, ylabel, main, frames, runs)
@@ -162,7 +158,7 @@ class Benchmark:
       .replace('%ylabel%', self.ylabel)
       .replace('%axis_params%', self.axis_params)
       .replace('%star%', '*' if not self.arrowheads else '')
-      .replace('%plots%', '\n'.join([self.runs[index].generate_graph_includes(index, 'left') for index in range(len(self.runs))]))
+      .replace('%plots%', self.__generate_graph_includes('left'))
     )
 
     if self.ylabel_right != '':
@@ -182,7 +178,7 @@ class Benchmark:
         .replace('%ylabel%', self.ylabel_right)
         .replace('%axis_params%', self.axis_params_right)
         .replace('%star%', '*' if not self.arrowheads else '')
-        .replace('%plots%', '\n'.join([self.runs[index].generate_graph_includes(index, 'right') for index in range(len(self.runs))]))
+        .replace('%plots%', self.__generate_graph_includes('right'))
       )
 
     file.write(r"""
@@ -212,7 +208,7 @@ default: bench.pdf
       + '\n\n'
     )
 
-    filenames = [str(index) + '_' + self.runs[index].name.replace(' ', '_') for index in range(len(self.runs))]
+    filenames = [run.name.replace(' ', '_') for run in self.runs]
     for run, filename in zip(self.runs, filenames):
       print('run:', run.name)
 
@@ -238,19 +234,20 @@ default: bench.pdf
         + '\n\n'
       )
 
-      for plot in run.plots:
-        print('plot:', plot.name)
+    for plot in self.plots:
+      print('plot:', plot.name)
 
-        file.write("""
-%texfile%: %benchfile%
-	cat %benchfile% |%postproc% ../s2bench/bench2tex.py %tex_params% > %texfile%
-          """.strip()
-          .replace('%tex_params%', plot.tex_params)
-          .replace('%texfile%', filename + '_' + plot.name.replace(' ', '_') + '.tex')
-          .replace('%benchfile%', filename + '.bench')
-          .replace('%postproc%', plot.generate_post_processing())
-          + '\n\n'
-        )
+      file.write("""
+%texfile%: %benchfiles%
+	(%output%)%postproc% | ../s2bench/bench2tex.py %tex_params% > %texfile%
+        """.strip()
+        .replace('%tex_params%', plot.tex_params)
+        .replace('%texfile%', plot.name.replace(' ', '_') + '.tex')
+        .replace('%benchfiles%', ' '.join([run.name.replace(' ', '_') + '.bench' for run in plot.runs]))
+        .replace('%output%', plot.generate_commands())
+        .replace('%postproc%', plot.generate_post_processing())
+        + '\n\n'
+      )
 
     file.write("""
 -include *.d
@@ -263,7 +260,7 @@ clean:
 
 .PHONY: default run clean
       """.strip()
-      .replace('%texs%', ' '.join([file + '_' + plot.name.replace(' ', '_') + '.tex' for run, file in zip(self.runs, filenames) for plot in run.plots]))
+      .replace('%texs%', ' '.join([plot.name.replace(' ', '_') + '.tex' for plot in self.plots]))
     )
       
     file.truncate()
