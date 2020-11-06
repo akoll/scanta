@@ -40,16 +40,47 @@ class Run:
     return len([step for step in self.steps if step.compile_params != self.steps[0].compile_params]) == 0
 
 class Benchmark:
-  def __init__(self, title, xlabel, ylabel, main, frames, runs, compile_params='', run_params='', tex_params='', ymax=None, dir='build/', ylabel_right='', ymax_right=None, axis_params='', axis_params_right='', arrowheads=True):
+  def __init__(
+    self,
+    title,
+    xlabel,
+    ylabel,
+    main,
+    frames,
+    runs,
+    compile_params='',
+    run_params='',
+    tex_params='',
+    dir='build/',
+    ylabel_right='',
+    axis_params='',
+    axis_params_right='',
+    arrowheads=True
+  ):
+    self.title = title
+    self.xlabel = xlabel
+    self.ylabel = ylabel
+    self.main = main
+    self.frames = frames
+    self.runs = runs
+    self.compile_params = compile_params
+    self.run_params = run_params
+    self.tex_params = tex_params
     self.dir = dir
-    if not os.path.exists(dir):
-      os.makedirs(dir)
-    self.__graph(title, xlabel, ylabel, main, frames, runs, ymax, ylabel_right, ymax_right, axis_params, axis_params_right, arrowheads)
-    self.__makefile(main, frames, compile_params, run_params, tex_params, runs)
+    self.ylabel_right = ylabel_right
+    self.axis_params = axis_params
+    self.axis_params_right = axis_params_right
+    self.arrowheads = arrowheads
 
-  def __graph(self, title, xlabel, ylabel, main, frames, runs, ymax=None, ylabel_right='', ymax_right=None, axis_params='', axis_params_right='', arrowheads=True):
+  def generate(self):
+    if not os.path.exists(self.dir):
+      os.makedirs(self.dir)
+    self.__graph()
+    self.__makefile()
+
+  def __graph(self):
     # print('graph:', title, xlabel, ylabel, main, frames, runs)
-    print('graph {}: {}'.format(main, title))
+    print('graph {}: {}'.format(self.main, self.title))
     file = open(self.dir + 'graph.tex', 'w')
     file.seek(0)
     file.write(r"""
@@ -70,22 +101,21 @@ class Benchmark:
       axis lines%star%=left,
       grid=major,
       mark size=0.4mm,
-      xlabel={%xlabel%}, ylabel={%ylabel%},%ymax%
+      xlabel={%xlabel%}, ylabel={%ylabel%},
       legend style={at={(0,-0.1)},anchor=north west},%axis_params%
     ]
 %runs%
     \end{axis}
       """.strip()
-      .replace('%title%', title)
-      .replace('%xlabel%', xlabel)
-      .replace('%ylabel%', ylabel)
-      .replace('%ymax%', ' ymax={},'.format(ymax) if ymax else '')
-      .replace('%axis_params%', axis_params)
-      .replace('%star%', '*' if not arrowheads else '')
-      .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if runs[index].side == 'left']))
+      .replace('%title%', self.title)
+      .replace('%xlabel%', self.xlabel)
+      .replace('%ylabel%', self.ylabel)
+      .replace('%axis_params%', self.axis_params)
+      .replace('%star%', '*' if not self.arrowheads else '')
+      .replace('%runs%', '\n'.join([self.__plot(self.runs[index], index) for index in range(len(self.runs)) if self.runs[index].side == 'left']))
     )
 
-    if ylabel_right != '':
+    if self.ylabel_right != '':
       file.write(r"""
       \begin{axis}[
         width=12cm, height=8cm,
@@ -93,17 +123,16 @@ class Benchmark:
         axis x line=none,
         %grid=major,
         mark size=0.4mm,
-        ylabel={%ylabel%},%ymax%
+        ylabel={%ylabel%},
         legend style={at={(1,-0.1)},anchor=north east},%axis_params%
       ]
   %runs%
       \end{axis}
         """.strip()
-        .replace('%ylabel%', ylabel_right)
-        .replace('%ymax%', ' ymax={},'.format(ymax_right) if ymax_right else '')
-        .replace('%axis_params%', axis_params_right)
-        .replace('%star%', '*' if not arrowheads else '')
-        .replace('%runs%', '\n'.join([self.__plot(runs[index], index) for index in range(len(runs)) if runs[index].side == 'right']))
+        .replace('%ylabel%', self.ylabel_right)
+        .replace('%axis_params%', self.axis_params_right)
+        .replace('%star%', '*' if not self.arrowheads else '')
+        .replace('%runs%', '\n'.join([self.__plot(self.runs[index], index) for index in range(len(self.runs)) if self.runs[index].side == 'right']))
       )
 
     file.write(r"""
@@ -124,7 +153,7 @@ class Benchmark:
       \addlegendentry{%name%}
     """.rstrip().replace('%name%', run.name).replace('%file%', filename) + '\n'
 
-  def __makefile(self, main, frames, compile_params, run_params, tex_params, runs):
+  def __makefile(self):
     file = open(self.dir + 'Makefile', 'w')
     file.seek(0)
     file.write("""
@@ -136,13 +165,13 @@ CPARAMS = -DFRAME_COUNT=%frames% %compile_params%
 default: bench.pdf
 
       """.strip()
-      .replace('%frames%', str(frames))
-      .replace('%compile_params%', compile_params)
+      .replace('%frames%', str(self.frames))
+      .replace('%compile_params%', self.compile_params)
       + '\n\n'
     )
 
-    filenames = [str(index) + '_' + runs[index].name.replace(' ', '_') for index in range(len(runs))]
-    for run, filename in zip(runs, filenames):
+    filenames = [str(index) + '_' + self.runs[index].name.replace(' ', '_') for index in range(len(self.runs))]
+    for run, filename in zip(self.runs, filenames):
 
       for step_index in (range(len(run['steps'])) if not run.is_homogenous() else range(1)):
         step_cparams = run.steps[step_index].compile_params
@@ -150,7 +179,7 @@ default: bench.pdf
 %outfile%: %main% $(DEPS)
 	$(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params%
           """.strip()
-          .replace('%main%', main)
+          .replace('%main%', self.main)
           .replace('%compile_params%', '{} {}'.format(run.compile_params, step_cparams))
           .replace('%outfile%', filename + ('_' + str(step_index) if not run.is_homogenous() else '') +  '.out')
           + '\n\n'
