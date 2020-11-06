@@ -73,8 +73,8 @@ class Run:
   def is_homogenous(self):
     return len([step for step in self.steps if step.compile_params != self.steps[0].compile_params]) == 0
 
-  def generate_graph_includes(self, side):
-    def include(plot, index):
+  def generate_graph_includes(self, index, side):
+    def include(plot):
       filename = '{}_{}_{}.tex'.format(
         str(index),
         self.name.replace(' ', '_'),
@@ -85,7 +85,7 @@ class Run:
         \addlegendentry{%title%}
       """.rstrip().replace('%title%', plot.title).replace('%file%', filename) + '\n'
 
-    return '\n'.join([include(self.plots[index], index) for index in range(len(self.plots)) if self.plots[index].side == side])
+    return '\n'.join([include(plot) for plot in self.plots if plot.side == side])
 
 
 
@@ -162,7 +162,7 @@ class Benchmark:
       .replace('%ylabel%', self.ylabel)
       .replace('%axis_params%', self.axis_params)
       .replace('%star%', '*' if not self.arrowheads else '')
-      .replace('%plots%', '\n'.join([run.generate_graph_includes('left') for run in self.runs]))
+      .replace('%plots%', '\n'.join([self.runs[index].generate_graph_includes(index, 'left') for index in range(len(self.runs))]))
     )
 
     if self.ylabel_right != '':
@@ -182,7 +182,7 @@ class Benchmark:
         .replace('%ylabel%', self.ylabel_right)
         .replace('%axis_params%', self.axis_params_right)
         .replace('%star%', '*' if not self.arrowheads else '')
-      .replace('%plots%', '\n'.join([run.generate_graph_includes('right') for run in self.runs]))
+        .replace('%plots%', '\n'.join([self.runs[index].generate_graph_includes(index, 'right') for index in range(len(self.runs))]))
       )
 
     file.write(r"""
