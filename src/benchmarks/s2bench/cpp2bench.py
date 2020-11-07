@@ -158,7 +158,7 @@ class Benchmark:
       grid=major,
       mark size=0.4mm,
       xlabel={%xlabel%}, ylabel={%ylabel%},
-      legend style={at={(0,-0.1)},anchor=north west},%axis_params%
+      legend style={at={(0,-0.125)},anchor=north west},%axis_params%
     ]
 %plots%
     \end{axis}
@@ -180,7 +180,7 @@ class Benchmark:
         %grid=major,
         mark size=0.4mm,
         ylabel={%ylabel%},
-        legend style={at={(1,-0.1)},anchor=north east},%axis_params%
+        legend style={at={(1,-0.125)},anchor=north east},%axis_params%
       ]
   %plots%
       \end{axis}
@@ -222,7 +222,7 @@ default: bench.pdf
     for run, filename in zip(self.runs, filenames):
       print('run:', run.name)
 
-      for step_index in (range(len(run['steps'])) if not run.is_homogenous() else range(1)):
+      for step_index in (range(len(run.steps)) if not run.is_homogenous() else range(1)):
         step_cparams = run.steps[step_index].compile_params
         file.write("""
 %outfile%: %main% $(DEPS)
