@@ -15,19 +15,27 @@ class Step:
     self.avg = avg
     self.max = max
 
+class PlotRun:
+  def __init__(self, run, avg=False, max=False, min=False):
+    self.run = run
+    self.avg = avg
+    self.max = max
+    self.min = min
+
 class Plot:
   def __init__(
     self,
     name,
-    runs,
+    plotruns,
     title=None,
     side='left',
     tex_params='black',
     avg=False,
     max=False,
+    min=False,
   ):
     self.name = name
-    self.runs = runs
+    self.plotruns = plotruns
     if title == None:
       self.title = name
     else:
@@ -36,15 +44,17 @@ class Plot:
     self.tex_params = tex_params
     self.avg = avg
     self.max = max
+    self.min = min
 
-  def generate_post_processing(self):
-    return '{}{}'.format(
-      ' | ../s2bench/bench2avg.py' if self.avg else '',
-      ' | ../s2bench/bench2max.py' if self.max else ''
+  def generate_post_processing(self, plotrun=None):
+    return '{}{}{}'.format(
+      ' | ../s2bench/bench2avg.py' if (plotrun.avg if plotrun != None else self.avg) else '',
+      ' | ../s2bench/bench2max.py' if (plotrun.max if plotrun != None else self.max) else '',
+      ' | ../s2bench/bench2min.py' if (plotrun.min if plotrun != None else self.min) else '',
     )
 
   def generate_commands(self):
-    return '; '.join(['cat ' + run.name.replace(' ', '_') + '.bench' for run in self.runs])
+    return '; '.join(['cat ' + plotrun.run.name.replace(' ', '_') + '.bench' + self.generate_post_processing(plotrun) for plotrun in self.plotruns])
 
 class Run:
   def __init__(
@@ -243,7 +253,7 @@ default: bench.pdf
         """.strip()
         .replace('%tex_params%', plot.tex_params)
         .replace('%texfile%', plot.name.replace(' ', '_') + '.tex')
-        .replace('%benchfiles%', ' '.join([run.name.replace(' ', '_') + '.bench' for run in plot.runs]))
+        .replace('%benchfiles%', ' '.join([plotrun.run.name.replace(' ', '_') + '.bench' for plotrun in plot.plotruns]))
         .replace('%output%', plot.generate_commands())
         .replace('%postproc%', plot.generate_post_processing())
         + '\n\n'
