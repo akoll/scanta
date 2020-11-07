@@ -151,25 +151,7 @@ class Benchmark:
 \beginpgfgraphicnamed{bench}
   \begin{tikzpicture}
     \pgfplotsset{set layers}
-    \begin{axis}[
-      title={\textbf{%title%}},
-      width=12cm, height=8cm,
-      axis lines%star%=left,
-      grid=major,
-      mark size=0.4mm,
-      xlabel={%xlabel%}, ylabel={%ylabel%},
-      legend style={at={(0,-0.125)},anchor=north west},%axis_params%
-    ]
-%plots%
-    \end{axis}
-      """.strip()
-      .replace('%title%', self.title)
-      .replace('%xlabel%', self.xlabel)
-      .replace('%ylabel%', self.ylabel)
-      .replace('%axis_params%', self.axis_params)
-      .replace('%star%', '*' if not self.arrowheads else '')
-      .replace('%plots%', self.__generate_graph_includes('left'))
-    )
+    """)
 
     if self.ylabel_right != '':
       file.write(r"""
@@ -190,6 +172,27 @@ class Benchmark:
         .replace('%star%', '*' if not self.arrowheads else '')
         .replace('%plots%', self.__generate_graph_includes('right'))
       )
+
+    file.write(r"""
+    \begin{axis}[
+      title={\textbf{%title%}},
+      width=12cm, height=8cm,
+      axis lines%star%=left,
+      grid=major,
+      mark size=0.4mm,
+      xlabel={%xlabel%}, ylabel={%ylabel%},
+      legend style={at={(0,-0.125)},anchor=north west},%axis_params%
+    ]
+%plots%
+    \end{axis}
+      """.strip()
+      .replace('%title%', self.title)
+      .replace('%xlabel%', self.xlabel)
+      .replace('%ylabel%', self.ylabel)
+      .replace('%axis_params%', self.axis_params)
+      .replace('%star%', '*' if not self.arrowheads else '')
+      .replace('%plots%', self.__generate_graph_includes('left'))
+    )
 
     file.write(r"""
   \end{tikzpicture}
