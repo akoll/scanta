@@ -87,11 +87,11 @@ class Run:
 class Benchmark:
   def __init__(
     self,
-    title,
-    xlabel,
-    ylabel,
     main,
     frames,
+    title=None,
+    xlabel='',
+    ylabel='',
     runs=[],
     plots=[],
     compile_params='',
@@ -122,7 +122,8 @@ class Benchmark:
   def generate(self):
     if not os.path.exists(self.dir):
       os.makedirs(self.dir)
-    self.__graph()
+    if self.title != None:
+      self.__graph()
     self.__makefile()
 
   def __generate_graph_includes(self, side):
@@ -154,6 +155,7 @@ class Benchmark:
 \usepackage{pgfplots}
 \usepgfplotslibrary{units}
 
+\pgfrealjobname{full}
 \begin{document}
 
 \beginpgfgraphicnamed{bench}
@@ -220,14 +222,16 @@ CC = g++
 CFLAGS = -Wall -std=c++2a -O3 -fopenmp
 CINCLUDES = -I../.. -I../../../lib -I../../../lib/taskflow -I../../../lib/entt/src
 CPARAMS = -DFRAME_COUNT=%frames% %compile_params%
-
-default: bench.pdf
-
       """.strip()
       .replace('%frames%', str(self.frames))
       .replace('%compile_params%', self.compile_params)
       + '\n\n'
     )
+
+    if self.title != None:
+      file.write('default: bench.pdf\n\n')
+    else:
+      file.write('default: {}\n'.format(' '.join([run.name.replace(' ', '_') + '.bench' for run in self.runs])))
 
     filenames = [run.name.replace(' ', '_') for run in self.runs]
     for run, filename in zip(self.runs, filenames):
@@ -270,14 +274,20 @@ default: bench.pdf
         + '\n\n'
       )
 
-    file.write("""
--include *.d
+    file.write('-include *.d\n\n')
 
+    if self.title != None:
+      file.write("""
 bench.pdf: graph.tex %texs%
 	lualatex --jobname=bench graph.tex
+        """.strip()
+        .replace('%texs%', ' '.join([plot.name.replace(' ', '_') + '.tex' for plot in self.plots]))
+        + '\n\n'
+      )
 
+    file.write("""
 clean:
-	rm -rf bench.pdf *.out *.d *.bench *.log *.aux %texs%
+	rm -rf *.pdf *.out *.d *.bench *.log *.aux %texs%
 
 .PHONY: default run clean
       """.strip()
