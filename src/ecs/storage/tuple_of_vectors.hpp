@@ -128,9 +128,8 @@ public:
   /// @param components The set of components to be initially associated with the new entity.
   template<typename... TComponents>
   void new_entity(TComponents&&... components) {
-    // Create new entity metadata.
-    _entities.emplace_back();
-
+    // Create new entity metadata and set the associated component bits in the signature.
+    _entities.emplace_back().signature = signature_of<std::decay_t<TComponents>...>;
     // Push the initial components into their vectors.
     (std::get<std::vector<TComponents>>(_components).push_back(std::forward<decltype(components)>(components)), ...);
     // Default-construct all components that are not passed in.

@@ -9,7 +9,7 @@ namespace benchmark {
 /// ECS System to measure frame delta times and output them to stdout.
 ///
 /// @tparam N Number of frames to measure.
-template<size_t N>
+template<size_t N = 0>
 class FrameTimeSystem {
 public:
   float get_seconds_total() const {
