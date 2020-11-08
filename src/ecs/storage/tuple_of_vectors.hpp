@@ -278,7 +278,7 @@ private:
 
       // Swap the active and the inactive entity metadata, so that the active is left of the inactive.
       std::swap(_entities[it_active], _entities[it_inactive]);
-      // Swap each component data in a fold-expresseion.
+      // Swap each component data in a fold-expression.
       // The lambda is called for every stored component type.
       ([&]() {
         // Get the corresponding vector.

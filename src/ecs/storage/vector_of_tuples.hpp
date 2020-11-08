@@ -51,6 +51,13 @@ public:
   /// The handle type for systems to reference entities with.
   using Entity = size_t;
 
+  /// Constructs a storage with no components initially stored.
+  ///
+  /// @param capacity The initial entity capacity for which to allocate memory for.
+  VectorOfTuples(size_t capacity = 32) {
+    _data.reserve(capacity);
+  }
+
   /// Returns the number of active entities currently stored.
   ///
   /// @returns The number of active entities currently stored.
@@ -125,10 +132,10 @@ public:
 
   /// Removes an entity from the storage.
   ///
-  /// Sets the entity as inactive.
-  /// Ensures that the activeness state of the entity at index `_size` is unchanged.
+  /// This merely sets the entity as inactive. Shuffling will later reclaim the storage space.
   void remove_entity(Entity entity) {
-    _data.erase(_data.begin() + entity);
+    // Set the entity as inactive.
+    std::get<EntityMetadata>(_data[entity]).active = false;
   }
 
   /// Execute a callable on each entity with all required components attached.
@@ -169,6 +176,12 @@ public:
     } else callable(Entity{SIZE_MAX}); // TODO: move check to runtime
   }
 
+  /// Refreshes the storage to restore the preconditions necessary for iterating the entities.
+  auto refresh() {
+    size_t size = shuffle();
+    _data.resize(size);
+  }
+
 private:
   /// Contains any metadata (i.e. data besides the associated component data) necessary to be stored for an entity in this storage.
   struct EntityMetadata {
@@ -179,6 +192,10 @@ private:
     /// This is necessary because for each entity, storage for each component type is allocated and initialized (in the vectors)
     /// and its signature tracks if said memory is to be considered associated with the entity.
     Signature signature;
+
+    /// The entity's activeness. This represents the entities's existence/presence. Instead of being removed from memory,
+    /// entities to be removed are simply set as inactive. Shuffling then later gets rid of them.
+    bool active = true;
   };
 
   /// Tuple storing the entity metadata.
@@ -188,6 +205,68 @@ private:
   /// For each stored entity, a tuple is created which stores instances
   /// of all possible components.
   std::vector<std::tuple<EntityMetadata, TStoredComponents...>> _data;
+
+  /// Rearrange entity metadata and component data to have all active entities packed sequentially.
+  ///
+  /// This is essentially quicksort on a list of binary values (the `active` booleans), which takes only one iteration (no recursion required).
+  ///
+  /// After shuffling, no inactive entity lies before an active one in the vectors.
+  /// Thus all active entities can be iterated contiguously.
+  /// @returns The index of the first inactive entity in the storage. This is also the
+  /// number of active entities preceding it (and thus the total number of currently active stored entities).
+  size_t shuffle() {
+    // There are two iterators, initially pointing to the beginning and the end of the vectors respectively.
+    // They then move inwards toward each other and swap their elements whenever an inactive one and an active one
+    // are found with the inactive one having a lower index.
+    // The left iterator (`it_inactive`) only stops on inactive entities, while the right iterator (`it_active`) stops on active ones.
+
+    // Start out at index 0 (first element / left).
+    Entity it_inactive{0};
+    // Start out at index `_entities.size() - 1` (last element / right).
+    Entity it_active{_data.size() - 1};
+
+    // Loop indefinetely. Return conditions are given by the iterators crossing over.
+    while (true) {
+      // Move the left iterator to the right until it hits an inactive entity.
+      while (true) {
+        // If the left iterator is further right than the right one, all entities have been processed.
+        if (it_inactive > it_active) return it_inactive;
+        // If the left iterator points to an inactive entity, stop moving.
+        if (!std::get<EntityMetadata>(_data[it_inactive]).active) break;
+        // Move the left iterator to the right.
+        it_inactive++;
+      }
+      // Move the right iterator to the left until it hits an active entity.
+      while (true) {
+        // If the right iterator points to an active entity, stop moving.
+        if (std::get<EntityMetadata>(_data[it_active]).active) break;
+        // TODO: Update handles.
+        // invalidateEntityHandle(it_active);
+        // If the right iterator moves overtop the left one, all entities have been processed.
+        if (it_active <= it_inactive) return it_inactive;
+        // Move the right iterator to the left.
+        it_active--;
+      }
+
+      // After moving, the right iterator points to an active entity,
+      assert(std::get<EntityMetadata>(_data[it_active]).active);
+      // After moving, the left iterator points to an inactive entity,
+      assert(!std::get<EntityMetadata>(_data[it_inactive]).active);
+
+      // Swap the active and the inactive entities, so that the active is left of the inactive.
+      std::swap(_data[it_active], _data[it_inactive]);
+
+      // TODO: Update handles.
+      // refreshEntityHandle(it_inactive);
+      // invalidateEntityHandle(it_active);
+      // refreshEntityHandle(it_active);
+
+      // Move iterators towards each other to continue.
+      it_inactive++;
+      it_active--;
+    }
+  }
+
 };
 
 }
