@@ -135,7 +135,7 @@ public:
     (std::get<std::vector<TComponents>>(_components).push_back(std::forward<decltype(components)>(components)), ...);
     // Default-construct all components that are not passed in.
     ([&]() {
-      if constexpr (types_contain<TStoredComponents, TComponents...>)
+      if constexpr (!types_contain<TStoredComponents, TComponents...>)
         std::get<std::vector<TStoredComponents>>(_components).emplace_back();
     }(), ...);
   }
