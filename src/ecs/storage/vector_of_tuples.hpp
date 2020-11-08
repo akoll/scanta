@@ -15,10 +15,7 @@ using namespace hana::literals;
 
 namespace ecs::storage {
 
-/// Stores components in multiple equally-sized vectors.
-///
-/// For each stored component type there is exactly one vector.
-/// All vectors are always of equal size, and always at least as long as the number of entities stored.
+/// TODO: Stores component data in a vector of entity tuples.
 ///
 /// @tparam TStoredComponents The component types to be stored.
 template<typename... TStoredComponents>

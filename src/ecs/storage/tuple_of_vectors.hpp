@@ -155,7 +155,7 @@ public:
     /// This means that `_size` is merely an upper bound.
   }
 
-  /// Execute a callable on each entity with all required components attached.
+  /// Executes a callable on each entity with all required components attached.
   ///
   /// Requires no inactive entity to exist with an index smaller than the highest active one.
   /// @tparam TRequiredComponents The set of component types required to be attached to an entity to be processed.
@@ -202,7 +202,7 @@ public:
     stream << std::endl;
   }
 
-  /// Refresh the storage to restore the preconditions necessary for iterating the entities.
+  /// Refreshes the storage to restore the preconditions necessary for iterating the entities.
   auto refresh() {
     return _size = shuffle();
   }
