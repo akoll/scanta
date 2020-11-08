@@ -44,7 +44,7 @@ runs = [
 
 benchmark = Benchmark(
   dir='component_types/',
-  title='component types - sequential, frames: $10^4$, entities: $10^5$',
+  title='component types - sequential, $10^4$ frames, entities: $10^5$',
   xlabel='component types',
   ylabel='frame time',
   axis_params='change y base, y SI prefix=milli, y unit=s,',

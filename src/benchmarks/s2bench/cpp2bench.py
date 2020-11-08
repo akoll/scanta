@@ -5,7 +5,7 @@ class Step:
     self,
     compile_params='',
     params='',
-    repetitions=1,
+    repetitions=None,
     avg=False,
     max=False
   ):
@@ -30,6 +30,7 @@ class Plot:
     title=None,
     side='left',
     tex_params='black',
+    legend_entry=True,
     avg=False,
     max=False,
     min=False,
@@ -42,6 +43,7 @@ class Plot:
       self.title = title
     self.side = side
     self.tex_params = tex_params
+    self.legend_entry = legend_entry
     self.avg = avg
     self.max = max
     self.min = min
@@ -63,12 +65,14 @@ class Run:
     compile_params='',
     run_params='',
     steps=None,
-    instrument='native'
+    instrument='native',
+    repetitions=1,
   ):
     self.name = name
     self.compile_params = compile_params
     self.run_params = run_params
     self.instrument = instrument
+    self.repetitions = repetitions
 
     if steps == None:
       self.steps = [
@@ -126,10 +130,14 @@ class Benchmark:
       filename = '{}.tex'.format(
         plot.name.replace(' ', '_')
       )
-      return r"""
+      include = r"""
         \input{%file%}
-        \addlegendentry{%title%}
-      """.rstrip().replace('%title%', plot.title).replace('%file%', filename) + '\n'
+      """.rstrip().replace('%file%', filename) + '\n'
+      if plot.legend_entry:
+        include += r"""
+          \addlegendentry{%title%}
+        """.rstrip().replace('%title%', plot.title) + '\n'
+      return include
 
     return '\n'.join([include(plot) for plot in self.plots if plot.side == side])
 
@@ -287,10 +295,11 @@ clean:
         run.run_params,
         step.params,
       )
+      repetitions = step.repetitions if step.repetitions != None else run.repetitions
       if (run.instrument == 'perf'):
-        command = '(perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , -r {} {} 2>&1) | ../s2bench/perf2bench.py'.format(step.repetitions, command)
+        command = '(perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , -r {} {} 2>&1) | ../s2bench/perf2bench.py'.format(repetitions, command)
       elif (run.instrument == 'frameavg'):
-        command = '(for _ in {1..%s}; do %s; done) | ../s2bench/bench2avg.py %s' % (step.repetitions, command, step.repetitions)
+        command = '(for _ in {1..%s}; do %s; done) | ../s2bench/bench2avg.py %s' % (repetitions, command, repetitions)
       return command
 
     commands = '; '.join(['({}{}{})'.format(
