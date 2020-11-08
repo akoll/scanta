@@ -38,3 +38,10 @@ consteval auto find_component_index() {
 /// @tparam Ts The list of types to be searched in.
 template<typename T, typename... Ts>
 constexpr size_t type_index = internal::find_component_index<T, Ts...>();
+
+/// Whether or not a specific type is contained in a variadic list of types.
+///
+/// @tparam T The type in question.
+/// @tparam Ts The list of types to be searched in.
+template<typename T, typename... Ts>
+constexpr bool types_contain = hana::contains(hana::tuple_t<Ts...>, hana::type_c<T>);
