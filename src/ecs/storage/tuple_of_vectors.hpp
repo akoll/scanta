@@ -58,15 +58,15 @@ public:
   ///
   /// @param capacity The initial entity capacity for which to allocate memory for.
   TupleOfVectors(size_t capacity = 32) {
-    grow_to(capacity);
+    reserve(capacity);
   }
 
   /// Returns and upper bound of the number of active entities currently stored.
   ///
   /// After shuffling and before removing an entity this upper bound is also the exact amount.
-  /// @returns The number of active entities currently stored or an upper bound if `_size` is currently inconsistent.
+  /// @returns The number of active entities currently stored or an upper bound if inactive entities are currently stored.
   size_t get_size() {
-    return _size;
+    return _entities.size();
   }
 
   /// Returns a reference to a single component of some entity.
@@ -125,37 +125,30 @@ public:
   // TODO: return entity?
   /// Creates and activates a new entity.
   ///
-  /// If necessary, this will allocate memory.
-  /// Requires the entity slot at index `_size` to be inactive.
   /// @param components The set of components to be initially associated with the new entity.
-  void new_entity(auto&&... components) {
-    // Grow exponentially if needed.
-    if (_size >= _entities.size()) grow_to(_entities.size() * 2);
-    // The new entity is to be inactive (because more storage is allocated than occupied by active entities).
-    // Because removing entities will not decrease `_size` and after shuffling exactly the first `_size`
-    // stored entities are active, the entity at slot `_size` is always inactive.
-    assert(!_entities[_size].active);
-    // Activate just the new entity.
-    _entities[_size].active = true;
-    // Set the initial components from the parameters.
-    set_components(_size, std::forward<decltype(components)>(components)...);
-    ++_size;
+  template<typename... TComponents>
+  void new_entity(TComponents&&... components) {
+    // Create new entity metadata.
+    _entities.emplace_back();
+
+    // Push the initial components into their vectors.
+    (std::get<std::vector<TComponents>>(_components).push_back(std::forward<decltype(components)>(components)), ...);
+    // Default-construct all components that are not passed in.
+    ([&]() {
+      if constexpr (!types_contain<TStoredComponents, TComponents...>)
+        std::get<std::vector<TStoredComponents>>(_components).emplace_back();
+    }(), ...);
   }
 
   /// Removes an entity from the storage.
   ///
-  /// Sets the entity as inactive.
-  /// Ensures that the activeness state of the entity at index `_size` is unchanged.
+  /// This merely sets the entity as inactive. Shuffling will later reclaim the storage space.
   void remove_entity(Entity entity) {
     // Set the entity as inactive.
     _entities[entity].active = false;
-    /// The `_size` field is not decreased here to allow for `new_entity` to use a predictable entity slot
-    /// for creation of new entities. Otherwise, removing an entity that is not at index `_size - 1` would
-    /// invalidate `new_entity`'s precondition of the `_size` slot being inactive.
-    /// This means that `_size` is merely an upper bound.
   }
 
-  /// Execute a callable on each entity with all required components attached.
+  /// Executes a callable on each entity with all required components attached.
   ///
   /// Requires no inactive entity to exist with an index smaller than the highest active one.
   /// @tparam TRequiredComponents The set of component types required to be attached to an entity to be processed.
@@ -168,7 +161,7 @@ public:
       // Construct a signature to be matched against from the required component types.
       constexpr Signature signature = signature_of<TRequiredComponents...>;
       // Iterate all active components.
-      for (size_t i{0}; i < _size; ++i) {
+      for (size_t i{0}; i < _entities.size(); ++i) {
         // Match the entity signature with the required component types using a bitwise AND.
         if ((_entities[i].signature & signature) == signature)
         // TODO: call with manager (since this is sequential)
@@ -185,7 +178,7 @@ public:
       // TODO: static_assert component types handled
       static constexpr Signature signature = signature_of<TRequiredComponents...>;
       #pragma omp parallel for
-      for (size_t i = 0; i < _size; ++i) {
+      for (size_t i = 0; i < _entities.size(); ++i) {
         if ((_entities[i].signature & signature) == signature)
         // TODO: maybe a parallel manager?
           callable(Entity{i});
@@ -202,9 +195,11 @@ public:
     stream << std::endl;
   }
 
-  /// Refresh the storage to restore the preconditions necessary for iterating the entities.
+  /// Refreshes the storage to restore the preconditions necessary for iterating the entities.
   auto refresh() {
-    return _size = shuffle();
+    size_t size = shuffle();
+    _entities.resize(size);
+    (std::get<std::vector<TStoredComponents>>(_components).resize(size), ...);
   }
 
 private:
@@ -218,17 +213,10 @@ private:
     /// and its signature tracks if said memory is to be considered associated with the entity.
     Signature signature;
 
-    /// The entity's activeness. This represents the entities's existence/presence, however this storage initializes memory for
-    /// more entities than are active, so this boolean is required.
-    bool active = false;
+    /// The entity's activeness. This represents the entities's existence/presence. Instead of being removed from memory,
+    /// entities to be removed are simply set as inactive. Shuffling then later gets rid of them.
+    bool active = true;
   };
-
-  /// An upper bound for the number of stored entities currently active.
-  ///
-  /// Directly after shuffling, it is the number of consecutive entitites (from the beginning) that are active.
-  /// This field may run out of sync, notably by removing an entity.
-  /// Executing `refresh` or `shuffle` will restore the size to be exact again.
-  size_t _size = 0;
 
   /// Vector storing the entity metadata.
   ///
@@ -246,8 +234,7 @@ private:
   /// This is essentially quicksort on a list of binary values (the `active` booleans), which takes only one iteration (no recursion required).
   ///
   /// After shuffling, no inactive entity lies before an active one in the vectors.
-  /// Ensures that the entity at index `_size` is inactive.
-  /// Thus the entities from `0` to `_size - 1` (inclusive) are all active, and no others are.
+  /// Thus all active entities can be iterated contiguously.
   /// @returns The index of the first inactive entity in the storage. This is also the
   /// number of active entities preceding it (and thus the total number of currently active stored entities).
   size_t shuffle() {
@@ -291,7 +278,7 @@ private:
 
       // Swap the active and the inactive entity metadata, so that the active is left of the inactive.
       std::swap(_entities[it_active], _entities[it_inactive]);
-      // Swap each component data in a fold-expresseion.
+      // Swap each component data in a fold-expression.
       // The lambda is called for every stored component type.
       ([&]() {
         // Get the corresponding vector.
@@ -311,14 +298,14 @@ private:
     }
   }
 
-  /// Resize all vectors to a given capacity.
+  /// Reserve a given capacity on all vectors.
   ///
-  /// @param capacity The new capacity to be resized to.
-  void grow_to(size_t capacity) {
-    // Resize entity metadata vector.
-    _entities.resize(capacity);
-    // Resize component data vectors using a fold expression.
-    (std::get<std::vector<TStoredComponents>>(_components).resize(capacity), ...);
+  /// @param capacity The new capacity to be reserved.
+  void reserve(size_t capacity) {
+    // Reserve entity metadata vector.
+    _entities.reserve(capacity);
+    // Reserve component data vectors using a fold expression.
+    (std::get<std::vector<TStoredComponents>>(_components).reserve(capacity), ...);
   }
 };
 
