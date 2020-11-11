@@ -15,6 +15,6 @@ for line in sys.stdin:
     misses = float(match.group(1))
 
 if loads and misses:
-  print(misses / loads)
+  print((misses / loads) * 100)
 else:
   exit(1)

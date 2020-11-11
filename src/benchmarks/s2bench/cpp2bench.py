@@ -1,5 +1,8 @@
 import os
 
+def filenamify(name):
+  return name.replace(' ', '_').replace('(', '+').replace(')', '+')
+
 class Step:
   def __init__(
     self,
@@ -21,6 +24,10 @@ class PlotRun:
     self.avg = avg
     self.max = max
     self.min = min
+
+class PlotStub:
+  def __init__(self, side='left'):
+    self.side = side
 
 class Plot:
   def __init__(
@@ -56,7 +63,7 @@ class Plot:
     )
 
   def generate_commands(self):
-    return '; '.join(['cat ' + plotrun.run.name.replace(' ', '_') + '.bench' + self.generate_post_processing(plotrun) for plotrun in self.plotruns])
+    return '; '.join(['cat ' + filenamify(plotrun.run.name) + '.bench' + self.generate_post_processing(plotrun) for plotrun in self.plotruns])
 
 class Run:
   def __init__(
@@ -90,6 +97,8 @@ class Benchmark:
     main,
     frames,
     title=None,
+    width=12,
+    height=8,
     xlabel='',
     ylabel='',
     runs=[],
@@ -104,6 +113,8 @@ class Benchmark:
     arrowheads=True
   ):
     self.title = title
+    self.width = width
+    self.height = height
     self.xlabel = xlabel
     self.ylabel = ylabel
     self.main = main
@@ -128,13 +139,22 @@ class Benchmark:
 
   def __generate_graph_includes(self, side):
     def include(plot):
-      filename = '{}.tex'.format(
-        plot.name.replace(' ', '_')
-      )
-      include = r"""
+      include = ""
+      if isinstance(plot, Plot):
+        filename = '{}.tex'.format(
+          filenamify(plot.name)
+        )
+        include = r"""
         \input{%file%}
-      """.rstrip().replace('%file%', filename) + '\n'
-      if plot.legend_entry:
+        """.rstrip().replace('%file%', filename) + '\n'
+      elif isinstance(plot, PlotStub):
+        include = r"""
+        \addplot coordinates {};
+        """
+      else:
+        print('ERROR: plot is neither Plot nor PlotStub')
+        exit(1)
+      if isinstance(plot, Plot) and plot.legend_entry:
         include += r"""
           \addlegendentry{%title%}
         """.rstrip().replace('%title%', plot.title) + '\n'
@@ -153,6 +173,7 @@ class Benchmark:
 \usepackage{graphics}
 \usepackage{tikz}
 \usepackage{pgfplots}
+\pgfplotsset{compat=1.3}
 \usepgfplotslibrary{units}
 
 \pgfrealjobname{full}
@@ -166,9 +187,9 @@ class Benchmark:
     if self.ylabel_right != '':
       file.write(r"""
       \begin{axis}[
-        width=12cm, height=8cm,
-        axis lines%star%=right,
-        axis x line=none,
+        width=%width%cm, height=%height%cm,
+        axis y line%star%=right,
+        hide x axis,
         %grid=major,
         mark size=0.4mm,
         ylabel={%ylabel%},
@@ -178,6 +199,8 @@ class Benchmark:
       \end{axis}
         """.strip()
         .replace('%ylabel%', self.ylabel_right)
+        .replace('%width%', str(self.width))
+        .replace('%height%', str(self.height))
         .replace('%axis_params%', self.axis_params_right)
         .replace('%star%', '*' if not self.arrowheads else '')
         .replace('%plots%', self.__generate_graph_includes('right'))
@@ -186,7 +209,7 @@ class Benchmark:
     file.write(r"""
     \begin{axis}[
       title={\textbf{%title%}},
-      width=12cm, height=8cm,
+      width=%width%cm, height=%height%cm,
       axis lines%star%=left,
       grid=major,
       mark size=0.4mm,
@@ -197,6 +220,8 @@ class Benchmark:
     \end{axis}
       """.strip()
       .replace('%title%', self.title)
+      .replace('%width%', str(self.width))
+      .replace('%height%', str(self.height))
       .replace('%xlabel%', self.xlabel)
       .replace('%ylabel%', self.ylabel)
       .replace('%axis_params%', self.axis_params)
@@ -231,9 +256,9 @@ CPARAMS = -DFRAME_COUNT=%frames% %compile_params%
     if self.title != None:
       file.write('default: bench.pdf\n\n')
     else:
-      file.write('default: {}\n'.format(' '.join([run.name.replace(' ', '_') + '.bench' for run in self.runs])))
+      file.write('default: {}\n'.format(' '.join([filenamify(run.name) + '.bench' for run in self.runs])))
 
-    filenames = [run.name.replace(' ', '_') for run in self.runs]
+    filenames = [filenamify(run.name) for run in self.runs]
     for run, filename in zip(self.runs, filenames):
       print('run:', run.name)
 
@@ -260,19 +285,20 @@ CPARAMS = -DFRAME_COUNT=%frames% %compile_params%
       )
 
     for plot in self.plots:
-      print('plot:', plot.name)
+      if isinstance(plot, Plot):
+        print('plot:', plot.name)
 
-      file.write("""
-%texfile%: %benchfiles%
+        file.write("""
+  %texfile%: %benchfiles%
 	(%output%)%postproc% | ../s2bench/bench2tex.py %tex_params% > %texfile%
-        """.strip()
-        .replace('%tex_params%', plot.tex_params)
-        .replace('%texfile%', plot.name.replace(' ', '_') + '.tex')
-        .replace('%benchfiles%', ' '.join([plotrun.run.name.replace(' ', '_') + '.bench' for plotrun in plot.plotruns]))
-        .replace('%output%', plot.generate_commands())
-        .replace('%postproc%', plot.generate_post_processing())
-        + '\n\n'
-      )
+          """.strip()
+          .replace('%tex_params%', plot.tex_params)
+          .replace('%texfile%', filenamify(plot.name) + '.tex')
+          .replace('%benchfiles%', ' '.join([filenamify(plotrun.run.name) + '.bench' for plotrun in plot.plotruns]))
+          .replace('%output%', plot.generate_commands())
+          .replace('%postproc%', plot.generate_post_processing())
+          + '\n\n'
+        )
 
     file.write('-include *.d\n\n')
 
@@ -281,7 +307,7 @@ CPARAMS = -DFRAME_COUNT=%frames% %compile_params%
 bench.pdf: graph.tex %texs%
 	lualatex --jobname=bench graph.tex
         """.strip()
-        .replace('%texs%', ' '.join([plot.name.replace(' ', '_') + '.tex' for plot in self.plots]))
+        .replace('%texs%', ' '.join([filenamify(plot.name) + '.tex' for plot in self.plots if isinstance(plot, Plot)]))
         + '\n\n'
       )
 
@@ -291,7 +317,7 @@ clean:
 
 .PHONY: default run clean
       """.strip()
-      .replace('%texs%', ' '.join([plot.name.replace(' ', '_') + '.tex' for plot in self.plots]))
+      .replace('%texs%', ' '.join([filenamify(plot.name) + '.tex' for plot in self.plots if isinstance(plot, Plot)]))
     )
       
     file.truncate()
