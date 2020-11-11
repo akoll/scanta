@@ -173,7 +173,7 @@ class Benchmark:
 \usepackage{graphics}
 \usepackage{tikz}
 \usepackage{pgfplots}
-\pgfplotsset{compat=1.3}
+\pgfplotsset{compat=1.17}
 \usepgfplotslibrary{units}
 
 \pgfrealjobname{full}
@@ -189,7 +189,8 @@ class Benchmark:
       \begin{axis}[
         width=%width%cm, height=%height%cm,
         axis y line%star%=right,
-        hide x axis,
+        %hide x axis,
+        axis x line=none,
         %grid=major,
         mark size=0.4mm,
         ylabel={%ylabel%},

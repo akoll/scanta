@@ -3,11 +3,11 @@
 #include "util/benchmark.hpp"
 
 struct X {
-  float values[WIDTH];
+  float value[WIDTH];
 };
 
 struct Y {
-  float values[WIDTH];
+  float value[WIDTH];
 };
 
 class SaxpySystem {
@@ -20,7 +20,7 @@ public:
   #endif
   {
     for (auto i{0u}; i < WIDTH; ++i)
-      y.values[i] = a * x.values[i] + y.values[i];
+      y.values[i] = a * x.value[i] + y.value[i];
   }
 
 private:
