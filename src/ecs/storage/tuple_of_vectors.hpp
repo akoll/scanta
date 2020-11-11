@@ -110,11 +110,13 @@ public:
     (set_component(entity, std::forward<TComponents>(components)), ...);
   }
 
-  // TODO: Test if this function works.
-  /// Removes a component association from some entity.
+  /// Detaches a component from an entity.
   ///
   /// This disables the component on the entity by mutating the entity signature stored in the metadata.
   /// The component data is not cleared and its memory not released.
+  ///
+  /// @tparam TComponent The type of the component to be detached.
+  /// @param entity The entity to be detached from.
   template<typename TComponent>
   void remove_component(Entity entity) {
     // TODO: static_assert component type stored

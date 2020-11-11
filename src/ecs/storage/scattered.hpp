@@ -174,7 +174,6 @@ namespace ecs::storage {
       }
     };
 
-
     /// Returns a reference to a single component of some entity.
     ///
     /// @param entity The entity to be accessed.
@@ -194,7 +193,23 @@ namespace ecs::storage {
       return _entities.size();
     }
 
-    // TODO: Add set_component for single components?
+    /// Sets the component data for a single component of some entity.
+    ///
+    /// This also attaches the passed in component to this entity (i.e. the signature bit is set).
+    /// All other components attached to this entity remain attached and unchanged.
+    /// @param entity The entity for which to set the component.
+    /// @param component The component data to be assigned.
+    template<typename TComponent>
+    void set_component(Entity entity, TComponent&& component) {
+      // TODO: static_assert component type stored
+      // Copy component from parameter.
+      if constexpr (options.smart_pointers)
+        // Use make_shared to create a shared smart pointer.
+        std::get<Pointer<std::decay_t<TComponent>>>(entity->components) = std::make_shared<TComponent>(std::forward<TComponent>(component));
+      else
+        // Use `new` to directly allocate memory for the component.
+        std::get<Pointer<std::decay_t<TComponent>>>(entity->components) = new TComponent(std::forward<TComponent>(component));
+    }
 
     /// Sets the component data for some entity.
     ///
@@ -209,24 +224,28 @@ namespace ecs::storage {
       // TODO: static_assert component type handled
       // Remove all components from the entity.
       entity->clear_components();
-      // Copy components from parameters.
-      if constexpr (options.smart_pointers)
-        // The component rvalue parameter-pack is unpacked using a fold-expression.
-        (
-          // Use make_shared to create a shared smart pointer.
-          (std::get<Pointer<std::decay_t<TComponents>>>(entity->components) = std::make_shared<TComponents>(std::forward<TComponents>(components))),
-          ... // Repeat for every component passed in.
-        );
-      else
-        // The component rvalue parameter-pack is unpacked using a fold-expression.
-        (
-          // Use `new` to directly allocate memory for the component.
-          (std::get<Pointer<std::decay_t<TComponents>>>(entity->components) = new TComponents(std::forward<TComponents>(components))),
-          ... // Repeat for every component passed in.
-        );
+
+      // The component rvalue parameter-pack is unpacked using a fold-expression.
+      (
+        // Attach the component to the entity.
+        set_component(entity, std::forward<TComponents>(components)),
+        ... // Repeat for every component passed in.
+      );
     }
 
-    // TODO: Add remove_component?
+    /// Detaches a component from an entity.
+    ///
+    /// @tparam TComponent The type of the component to be detached.
+    /// @param entity The entity to be detached from.
+    template<typename TComponent>
+    void remove_component(Entity entity) {
+      // TODO: static_assert component type stored
+      // If regular pointers are used, memory needs to be freed first using `delete`.
+      if constexpr (!options.smart_pointers)
+        (delete std::get<Pointer<std::decay_t<TComponent>>>(entity->components));
+      // Set the component pointer to null, indicating that the component is detached.
+      (std::get<Pointer<std::decay_t<TComponent>>>(entity->components) = nullptr);
+    }
 
     // TODO: return entity?
     /// Create a new entity.
