@@ -6,7 +6,6 @@ ycalc = '"y"'
 def step_count(x):
   return eval(step_calc)
 
-entities = 16*12*8*4*3
 steps = [
   Step(
     avg=True,
@@ -44,15 +43,16 @@ runs = [
 
 benchmark = Benchmark(
   dir='component_types/',
-  title='component types - sequential, $10^4$ frames, entities: $10^5$',
+  #title='component types - sequential, $10^4$ frames, entities: $10^5$',
+  title='',
   xlabel='component types',
-  ylabel='frame time',
+  ylabel='average frame time',
   axis_params='change y base, y SI prefix=milli, y unit=s,',
   ylabel_right='cache misses',
   axis_params_right='y unit=percent,',
   main='../component_types.cpp',
   frames=10000,
-  compile_params='-DRUNTIME_SEQUENTIAL',
+  compile_params='-DRUNTIME_SEQUENTIAL -DWIDTH=8u -DITERATIONS=32u',
   runs=runs,
   plots=[
     Plot('tovft', title='tuple of vectors', tex_params='"orange,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0])]),

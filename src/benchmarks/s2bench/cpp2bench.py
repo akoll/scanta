@@ -23,12 +23,19 @@ class Step:
     self.slope = slope
 
 class PlotRun:
-  def __init__(self, run, avg=False, max=False, min=False, slope=False):
+  def __init__(self, run, cbench=False, avg=False, max=False, min=False, slope=False):
     self.run = run
+    self.cbench = cbench
     self.avg = avg
     self.max = max
     self.min = min
     self.slope = slope
+
+  def get_run_name(self):
+    if self.cbench:
+      return self.run.name + '.compile'
+    else:
+      return self.run.name
 
 class PlotStub:
   def __init__(self, side='left'):
@@ -71,7 +78,7 @@ class Plot:
     )
 
   def generate_commands(self):
-    return '; '.join(['cat ' + filenamify(plotrun.run.name) + '.bench' + self.generate_post_processing(plotrun) for plotrun in self.plotruns])
+    return '; '.join(['cat ' + filenamify(plotrun.get_run_name()) + '.bench' + self.generate_post_processing(plotrun) for plotrun in self.plotruns])
 
 class Run:
   def __init__(
@@ -118,7 +125,8 @@ class Benchmark:
     ylabel_right='',
     axis_params='',
     axis_params_right='',
-    arrowheads=True
+    arrowheads=True,
+    legend_shift=0
   ):
     self.title = title
     self.width = width
@@ -137,6 +145,7 @@ class Benchmark:
     self.axis_params = axis_params
     self.axis_params_right = axis_params_right
     self.arrowheads = arrowheads
+    self.legend_shift = legend_shift
 
   def generate(self):
     if not os.path.exists(self.dir):
@@ -203,7 +212,7 @@ class Benchmark:
         %grid=major,
         mark size=0.4mm,
         ylabel={%ylabel%},
-        legend style={at={(1,-0.125)},anchor=north east},%axis_params%
+        legend style={at={(1,-0.125-%shift%)},anchor=north east},%axis_params%
       ]
   %plots%
       \end{axis}
@@ -213,6 +222,7 @@ class Benchmark:
         .replace('%height%', str(self.height))
         .replace('%axis_params%', self.axis_params_right)
         .replace('%star%', '*' if not self.arrowheads else '')
+        .replace('%shift%', self.legend_shift)
         .replace('%plots%', self.__generate_graph_includes('right'))
       )
 
@@ -224,7 +234,7 @@ class Benchmark:
       grid=major,
       mark size=0.4mm,
       xlabel={%xlabel%}, ylabel={%ylabel%},
-      legend style={at={(0,-0.125)},anchor=north west},%axis_params%
+      legend style={at={(0,-0.125-%shift%)},anchor=north west},%axis_params%
     ]
 %plots%
     \end{axis}
@@ -236,6 +246,7 @@ class Benchmark:
       .replace('%ylabel%', self.ylabel)
       .replace('%axis_params%', self.axis_params)
       .replace('%star%', '*' if not self.arrowheads else '')
+      .replace('%shift%', self.legend_shift)
       .replace('%plots%', self.__generate_graph_includes('left'))
     )
 
@@ -276,11 +287,13 @@ CPARAMS = -DFRAME_COUNT=%frames% %compile_params%
         step_cparams = run.steps[step_index].compile_params
         file.write("""
 %outfile%: %main% $(DEPS)
-	$(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params%
+	\\time -f %e $(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params% 2>%concat% %runname%.compile.bench
           """.strip()
           .replace('%main%', self.main)
           .replace('%compile_params%', '{} {}'.format(run.compile_params, step_cparams))
           .replace('%outfile%', filename + ('_' + str(step_index) if not run.is_homogenous() else '') +  '.out')
+          .replace('%runname%', filename)
+          .replace('%concat%', '>' if step_index != 0 else '')
           + '\n\n'
         )
 
@@ -304,7 +317,7 @@ CPARAMS = -DFRAME_COUNT=%frames% %compile_params%
           """.strip()
           .replace('%tex_params%', plot.tex_params)
           .replace('%texfile%', filenamify(plot.name) + '.tex')
-          .replace('%benchfiles%', ' '.join([filenamify(plotrun.run.name) + '.bench' for plotrun in plot.plotruns]))
+          .replace('%benchfiles%', ' '.join([filenamify(plotrun.get_run_name()) + '.bench' for plotrun in plot.plotruns]))
           .replace('%output%', plot.generate_commands())
           .replace('%postproc%', plot.generate_post_processing())
           + '\n\n'

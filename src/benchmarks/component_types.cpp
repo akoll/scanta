@@ -2,8 +2,8 @@
 
 #include "util/benchmark.hpp"
 
-constexpr auto iters = 32u;
-constexpr auto payload_size = 8u;
+constexpr auto iters = ITERATIONS;
+constexpr auto payload_size = WIDTH;
 
 template<size_t size, size_t index>
 struct Payload {
@@ -25,7 +25,7 @@ public:
     _screen = sum;
   }
 private:
-  volatile size_t _screen;
+  mutable volatile size_t _screen;
 };
 
 template<size_t... I>
@@ -38,8 +38,11 @@ auto make_scene(std::index_sequence<I...>) {
 template<size_t... I>
 auto spawn_entity(const auto& manager, std::index_sequence<I...>) {
     manager.new_entity(
-      // Payload<payload_size, I>{}...
+      #ifdef USE_ALL
+      Payload<payload_size, I>{}...
+      #else
       Payload<payload_size, 0>{}
+      #endif
     );
 }
   
