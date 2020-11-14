@@ -105,8 +105,12 @@ public:
   {}
 
   void run() {
-    _running = true;
     while (_running) _scene.update();
+  }
+
+  bool update() {
+    _scene.update();
+    return _running;
   }
 
   operator BaseScene&() {
@@ -119,7 +123,7 @@ public:
 
 private:
   BaseScene _scene;
-  bool _running;
+  bool _running = true;
 };
 
 template<typename... TSystems>
