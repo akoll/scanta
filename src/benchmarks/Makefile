@@ -1,6 +1,6 @@
 default: all
 
-all: saxpy/bench.pdf saxpy_smart/bench.pdf component_types/bench.pdf spawn/bench.pdf spawn_mem/bench.pdf bodies/bench.pdf
+all: saxpy/bench.pdf saxpy_smart/bench.pdf component_types/bench.pdf spawn/bench.pdf bodies/bench.pdf
 
 %/bench.pdf: %/Makefile
 	make -C $*
@@ -9,6 +9,6 @@ all: saxpy/bench.pdf saxpy_smart/bench.pdf component_types/bench.pdf spawn/bench
 	python $*.py
 
 clean:
-	rm -rfv saxpy saxpy_smart component_types spawn spawn_mem bodies
+	rm -rfv saxpy saxpy_smart component_types spawn bodies
 
 .PHONY: default all clean

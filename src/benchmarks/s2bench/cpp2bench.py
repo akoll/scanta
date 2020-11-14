@@ -10,20 +10,25 @@ class Step:
     params='',
     repetitions=None,
     avg=False,
-    max=False
+    max=False,
+    min=False,
+    slope=False,
   ):
     self.compile_params = compile_params
     self.params = params
     self.repetitions = repetitions
     self.avg = avg
+    self.min = min
     self.max = max
+    self.slope = slope
 
 class PlotRun:
-  def __init__(self, run, avg=False, max=False, min=False):
+  def __init__(self, run, avg=False, max=False, min=False, slope=False):
     self.run = run
     self.avg = avg
     self.max = max
     self.min = min
+    self.slope = slope
 
 class PlotStub:
   def __init__(self, side='left'):
@@ -41,6 +46,7 @@ class Plot:
     avg=False,
     max=False,
     min=False,
+    slope=False,
   ):
     self.name = name
     self.plotruns = plotruns
@@ -54,12 +60,14 @@ class Plot:
     self.avg = avg
     self.max = max
     self.min = min
+    self.slope = slope
 
   def generate_post_processing(self, plotrun=None):
-    return '{}{}{}'.format(
+    return '{}{}{}{}'.format(
       ' | ../s2bench/bench2avg.py' if (plotrun.avg if plotrun != None else self.avg) else '',
       ' | ../s2bench/bench2max.py' if (plotrun.max if plotrun != None else self.max) else '',
       ' | ../s2bench/bench2min.py' if (plotrun.min if plotrun != None else self.min) else '',
+      ' | ../s2bench/bench2slope.py' if (plotrun.slope if plotrun != None else self.slope) else '',
     )
 
   def generate_commands(self):
@@ -172,6 +180,7 @@ class Benchmark:
 \documentclass{article}
 \usepackage{graphics}
 \usepackage{tikz}
+\usetikzlibrary{patterns}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.17}
 \usepgfplotslibrary{units}
@@ -339,10 +348,12 @@ clean:
         command = '(for _ in {1..%s}; do %s; done) | ../s2bench/bench2avg.py %s' % (repetitions, command, repetitions)
       return command
 
-    commands = '; '.join(['({}{}{})'.format(
+    commands = '; '.join(['({}{}{}{}{})'.format(
       step_command(index),
        ' | ../s2bench/bench2avg.py' if (run.steps[index].avg) else '',
        ' | ../s2bench/bench2max.py' if (run.steps[index].max) else '',
+       ' | ../s2bench/bench2min.py' if (run.steps[index].min) else '',
+       ' | ../s2bench/bench2slope.py' if (run.steps[index].slope) else '',
     ) for index in range(len(run.steps))])
     if (len(run.steps) > 1):
       return '	(' + commands + ')'

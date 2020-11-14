@@ -2,6 +2,9 @@
 
 #include "util/benchmark.hpp"
 
+/// This benchmark emulates the behavior of the _tuple of vectors of tuples_ storage.
+/// This is achieved by using a _tuple of vectors_ storage but manually storing tuples inside.
+
 struct Transform {
   float position[WIDTH];
 };
