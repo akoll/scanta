@@ -239,6 +239,9 @@ private:
   /// @returns The index of the first inactive entity in the storage. This is also the
   /// number of active entities preceding it (and thus the total number of currently active stored entities).
   size_t shuffle() {
+    // If the storage is empty, return immediately.
+    if (_entities.size() == 0) return 0;
+
     // There are two iterators, initially pointing to the beginning and the end of the vectors respectively.
     // They then move inwards toward each other and swap their elements whenever an inactive one and an active one
     // are found with the inactive one having a lower index.
