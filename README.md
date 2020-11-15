@@ -51,6 +51,10 @@ We can now start to define component types and systems that shall later run with
 ### Components
 _Components_ are just regular `struct`s:
 ```cpp
+struct Position {
+  float[2] value;
+};
+
 struct Flammable {
   bool on_fire = false;
   float fire_resistance = 0.1f;
@@ -58,7 +62,7 @@ struct Flammable {
 
 struct Appearance {
   uint8_t color[3];
-  float diameter;
+  float radius;
 };
 ```
 
@@ -71,9 +75,9 @@ class RenderSystem {
 public:
   RenderSystem(Context context) : context(context) {}
 
-  void operator()(const Appearance& appearance) const {
-    // Draw the entity to the screen somehow.
-    // ...
+  void operator()(const Position& position, const Appearance& appearance) const {
+    // Draw the entity to the screen.
+    Screen::draw_circle(position.value, appearance.radius, appearance.color);
   }
 private:
   Context context;
