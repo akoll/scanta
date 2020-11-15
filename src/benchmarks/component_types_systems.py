@@ -35,19 +35,20 @@ benchmark = Benchmark(
   title='',
   xlabel='number of registered systems',
   ylabel='average frame time',
-  axis_params='change y base, y SI prefix=milli, y unit=s,',
+  axis_params='change y base, y SI prefix=milli, y unit=s,xmin=1,xmax=12,ymin=0',
   ylabel_right='compilation time',
-  axis_params_right='y unit=s,',
+  axis_params_right='y unit=s,xmin=1,xmax=12,ymin=2,ymax=12.5',
   main='../component_types.cpp',
   frames=1000,
   compile_params='-DSTORAGE_TOV -DWIDTH=128u -DITERATIONS=128u -DUSE_ALL',
   legend_shift='0.075',
+  arrowheads=False,
   runs=runs,
   plots=[
-    Plot('seqft', title='sequential runtime', tex_params='"orange,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0])]),
-    Plot('seqct', title='sequential runtime', side='right', tex_params='"orange!50!black,dashed,mark=x" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0], cbench=True)]),
-    Plot('parft', title='parallel runtime', tex_params='"red,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[1])]),
-    Plot('parct', title='parallel runtime', side='right', tex_params='"red!50!black,dashed,mark=x" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[1], cbench=True)]),
+    Plot('seqft', title='sequential runtime', tex_params='"red,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0])]),
+    Plot('seqct', title='sequential runtime', side='right', tex_params='"red,dashed,mark=x" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0], cbench=True)]),
+    Plot('parft', title='parallel runtime', tex_params='"blue,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[1])]),
+    Plot('parct', title='parallel runtime', side='right', tex_params='"blue,dashed,mark=x" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[1], cbench=True)]),
   ]
 )
 

@@ -126,7 +126,7 @@ class Benchmark:
     axis_params='',
     axis_params_right='',
     arrowheads=True,
-    legend_shift=0
+    legend_shift='0'
   ):
     self.title = title
     self.width = width

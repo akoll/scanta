@@ -20,7 +20,7 @@ public:
   #endif
   {
     for (auto i{0u}; i < WIDTH; ++i)
-      y.values[i] = a * x.value[i] + y.value[i];
+      y.value[i] = a * x.value[i] + y.value[i];
   }
 
 private:
