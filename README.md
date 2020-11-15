@@ -235,7 +235,7 @@ public:
 };
 
 ECS::Scene scene(
-  SystemB{}, // SystemB is registered before SystemA. Thus, SystemA's results from the last frame (or even before having executed at all) will be accessed.
+  SystemB{}, // SystemB is registered before SystemA. Thus, SystemA's results from the last frame will be accessed.
   SystemA{}
 );
 ```
