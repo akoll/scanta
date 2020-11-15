@@ -37,7 +37,7 @@ The two template parameters passed into the `EntityComponentSystem` are the _sto
 * The _storage_ is responsible for storing entity and component data and does so in a certain fashion. The available options shipped by default are:
   * `TupleOfVectors`. This storage stores component data of the same type contiguously and adjacently.
   * `VectorOfTuples`. This storage stores component data attached to the same entity contiguously and adjacently.
-  * `Scattered`. This storage stores entity and component data in dynamically allocated and fragmented heap locations. This storage options is further configurable.
+  * `Scattered`. This storage stores entity and component data in dynamically allocated and fragmented heap locations. This storage option is further configurable.
 * The _runtime_ mandates how systems are scheduled and executed at run-time.
   * `Sequential`. This runtime executes every system one after the other in the order they are registered in the scene.
   * `Parallel`. This runtime determines dependencies between systems at compile-time and infers an execution schedule where compatible systems are run concurrently.
@@ -75,7 +75,7 @@ class RenderSystem {
 public:
   RenderSystem(Context context) : context(context) {}
 
-  void operator()(const Position& position, const Appearance& appearance) const {
+  void operator()(const Position& position, const Appearance& appearance) {
     // Draw the entity to the screen.
     Screen::draw_circle(position.value, appearance.radius, appearance.color);
   }
