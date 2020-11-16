@@ -2,7 +2,7 @@
 > Configurable header-only Entity-Component-System library.
 
 ## Design philosophy
-`scanta` (ˈsen(t)ə) is an Entity-Component-System (ECS) library catered towards game developers.  
+`scanta` (/ˈsen(t)ə/) is an Entity-Component-System (ECS) library catered towards game developers.  
 It is designed to be highly customizable without sacrificing perfomance. Customization is done through selection _design options_ for certain _design choices_.  
 To achieve this, a scaffold implementation is employed with slots for multiple design choices. The scaffold contains any functionality that is universal to all design options.  
 The capability of using different design options shall have the least possible impact on the application's visible behavior, compared to a library with a pre-selected design option for each design choice.  
