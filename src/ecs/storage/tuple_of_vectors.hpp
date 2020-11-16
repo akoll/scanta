@@ -147,6 +147,8 @@ public:
   void remove_entity(Entity entity) {
     // Set the entity as inactive.
     _entities[entity].active = false;
+    // Increment the fragmentation counter.
+    ++_fragmentation;
   }
 
   /// Executes a callable on each entity with all required components attached.
@@ -198,7 +200,11 @@ public:
 
   /// Refreshes the storage to restore the preconditions necessary for iterating the entities.
   auto refresh() {
+    // Shuffle the storage to restore contiguity.
     size_t size = shuffle();
+    // Reset the fragmentation counter.
+    _fragmentation = 0;
+    // Resize vectors to drop inactive entities.
     _entities.resize(size);
     (std::get<std::vector<TStoredComponents>>(_components).resize(size), ...);
   }
@@ -230,6 +236,13 @@ private:
   /// All vectors always have the same size, equal to the size of the metadata vector.
   std::tuple<std::vector<TStoredComponents>...> _components;
 
+  /// The fragmentation counter.
+  ///
+  /// Counts the amount of entity removals since the last `shuffle` took place.
+  /// When entities are removed, the storage is left _fragmented_, since inactive
+  /// entities are in between active ones.
+  size_t _fragmentation = 0;
+
   /// Rearrange entity metadata and component data to have all active entities packed sequentially.
   ///
   /// This is essentially quicksort on a list of binary values (the `active` booleans), which takes only one iteration (no recursion required).
@@ -239,6 +252,9 @@ private:
   /// @returns The index of the first inactive entity in the storage. This is also the
   /// number of active entities preceding it (and thus the total number of currently active stored entities).
   size_t shuffle() {
+    // If the storage is not fragmented, return immediately.
+    if (!_fragmentation) return _entities.size();
+
     // If the storage is empty, return immediately.
     if (_entities.size() == 0) return 0;
 
