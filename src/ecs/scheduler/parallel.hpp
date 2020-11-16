@@ -10,7 +10,7 @@
 #include <boost/hana.hpp>
 #include <boost/hana/ext/std/tuple.hpp>
 
-#include "ecs/scaffold/runtime.hpp"
+#include "ecs/scaffold/scheduler.hpp"
 
 #include "ecs/util/timer.hpp"
 #include "ecs/util/to_hana_tuple_t.hpp"
@@ -19,31 +19,31 @@ namespace hana = boost::hana;
 using namespace hana::literals;
 namespace ct = boost::callable_traits;
 
-namespace ecs::runtime {
+namespace ecs::scheduler {
 
-/// Parallel ECS runtime, executing systems concurrently,
+/// Parallel ECS scheduler, executing systems concurrently,
 /// respecting a directed acyclic dependency graph.
 ///
 /// @tparam TStorage The storage to be used.
 /// @tparam TSystems The system types that are stored and executed. Usually inferred from the constructor.
 template<template<typename...> typename TStorage, typename... TSystems>
-class Parallel : ecs::Runtime<TStorage, TSystems...> {
+class Parallel : ecs::Scheduler<TStorage, TSystems...> {
 public:
-  /// The base runtime type to be inherited from.
-  using Runtime = ecs::Runtime<TStorage, TSystems...>;
+  /// The base scheduler type to be inherited from.
+  using Scheduler = ecs::Scheduler<TStorage, TSystems...>;
 
   /// Redeclaration of the type of this class itself as a type alias.
   /// Allows simpler usage further down.
-  using ParallelRuntime = Parallel<TStorage, TSystems...>;
+  using ParallelScheduler = Parallel<TStorage, TSystems...>;
 
   /// The entity handle type from the storage.
-  using typename Runtime::Entity;
+  using typename Scheduler::Entity;
 
-  /// Runtime constructor.
+  /// Scheduler constructor.
   ///
   /// @param systems The systems to be executed. Will be moved in.
   Parallel(TSystems&&... systems) :
-    // Systems are passed as references and stored in a runtime-owned tuple.
+    // Systems are passed as references and stored in a scheduler-owned tuple.
     _systems(std::make_tuple(std::forward<TSystems>(systems)...)),
     _runtime_manager(*this, _storage),
     _deferred_manager(*this, _storage)
@@ -187,10 +187,10 @@ public:
 
 private:
   /// Shortening type alias to access info more easily.
-  using typename Runtime::Info;
+  using typename Scheduler::Info;
 
   /// The entity & component storage.
-  typename Runtime::Storage _storage;
+  typename Scheduler::Storage _storage;
 
   /// Tuple to store references to the systems.
   ///
@@ -207,11 +207,11 @@ private:
   tf::Executor _executor;
 
   // Runtime manager.
-  using ParallelRuntimeManager = Runtime::template RuntimeManager<ParallelRuntime>;
+  using ParallelRuntimeManager = Scheduler::template SchedulerManager<ParallelScheduler>;
   ParallelRuntimeManager _runtime_manager;
 
   // Deferred manager.
-  using ParallelDeferredManager = Runtime::template DeferredManager<ParallelRuntime>;
+  using ParallelDeferredManager = Scheduler::template DeferredManager<ParallelScheduler>;
   ParallelDeferredManager _deferred_manager;
 
   /// List of currently queued deferred operations.

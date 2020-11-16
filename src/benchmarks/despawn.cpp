@@ -1,63 +1,41 @@
 #include <cstring>
 #include <cassert>
 
-#include "util/benchmark.hpp"
+#include "ecs/storage/scattered.hpp"
+
 #include "util/timer.hpp"
 
-struct Payload {
-  size_t value;
-};
+using Storage = ecs::storage::ScatteredCustom
+  #ifdef STORAGE_SCATTERED_SMART
+  ::WithSmartPointers
+  #endif
+  #ifdef STORAGE_SCATTERED_SET
+    ::WithEntitySet
+  #endif
+  ::Storage<size_t>;
 
-class DespawnSystem {
-public:
-  auto operator()(ECS::Entity entity, const Payload&) {
-    return [this, entity](const auto& manager) {
-      #ifdef REVERSE
-      if (++_removed_count > manager.get_entity_count() - DESPAWN_RATE)
-      #else
-      if (_removed_count++ < DESPAWN_RATE)
-      #endif
-        _queue.push_back(entity);
-      
-      #ifdef REVERSE
-      if (_removed_count == manager.get_entity_count()) {
-      #else
-      if (_removed_count == DESPAWN_RATE) {
-      #endif
-        ++_removed_count;
-        assert(_queue.size() == DESPAWN_RATE);
-        manager.defer([this](const auto& deferred_manager){
-          {
-            benchmark::Timer _;
-            #ifdef REVERSE
-            for (auto it = _queue.rbegin(); it != _queue.rend(); ++it)
-            #else
-            for (auto it = _queue.begin(); it != _queue.end(); ++it)
-            #endif
-              deferred_manager.remove_entity(*it);
-          }
-          _queue.clear();
-          _removed_count = 0;
-        });
-      }
-    };
-  }
-private:
-  size_t _removed_count = 0;
-  std::vector<ECS::Entity> _queue;
-};
+int main() {
+  Storage storage;
+  for (auto i{0u}; i < ENTITY_COUNT; ++i)
+    storage.new_entity(size_t{5});
   
-int main(int argc, const char** argv) {
-  benchmark::Scene scene(
-    #ifdef BENCHMARK_ENTITY_COUNT
-    [](){ return [](const auto& manager) {
-      std::cout << manager.get_entity_count() << std::endl;
-    }; },
-    #endif
-    DespawnSystem{}
-  );
-  for (auto i{0u}; i < INITIAL_COUNT; ++i)
-    scene->manager.new_entity(Payload{});
-  scene.run();
+  size_t de_index = 0;
+  while (de_index < ENTITY_COUNT) {
+    size_t index = 0;
+    Storage::Entity entity{nullptr};
+    storage.for_entities_with<size_t>([&](Storage::Entity e) {
+      if (index++ == de_index)
+        entity = e;
+    });
+    
+    {
+      benchmark::Timer _;
+      storage.remove_entity(entity);
+    }
+
+    storage.new_entity(size_t{5});
+    de_index += INTERVAL;
+  }
+
   return 0;
 }

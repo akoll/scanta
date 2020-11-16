@@ -19,12 +19,12 @@ steps = [
 runs = [
   Run(
     name='seq',
-    compile_params='-DBENCHMARK_FRAMETIME -DRUNTIME_SEQUENTIAL',
+    compile_params='-DBENCHMARK_FRAMETIME -DSCHEDULER_SEQUENTIAL',
     steps=steps
   ),
   Run(
     name='par',
-    compile_params='-DBENCHMARK_FRAMETIME -DRUNTIME_PARALLEL',
+    compile_params='-DBENCHMARK_FRAMETIME -DSCHEDULER_PARALLEL',
     steps=steps
   ),
 ]
@@ -45,10 +45,10 @@ benchmark = Benchmark(
   arrowheads=False,
   runs=runs,
   plots=[
-    Plot('seqft', title='sequential runtime', tex_params='"red,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0])]),
-    Plot('seqct', title='sequential runtime', side='right', tex_params='"red,dashed,mark=x" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0], cbench=True)]),
-    Plot('parft', title='parallel runtime', tex_params='"blue,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[1])]),
-    Plot('parct', title='parallel runtime', side='right', tex_params='"blue,dashed,mark=x" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[1], cbench=True)]),
+    Plot('seqft', title='sequential scheduler', tex_params='"red,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0])]),
+    Plot('seqct', title='sequential scheduler', side='right', tex_params='"red,dashed,mark=x" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[0], cbench=True)]),
+    Plot('parft', title='parallel scheduler', tex_params='"blue,thick,mark=*" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[1])]),
+    Plot('parct', title='parallel scheduler', side='right', tex_params='"blue,dashed,mark=x" "' + step_calc + '" ' + ycalc, plotruns=[PlotRun(runs[1], cbench=True)]),
   ]
 )
 

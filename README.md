@@ -26,21 +26,21 @@ To get started, include the necessary library headers and set up configuration. 
 ```cpp
 #include <ecs/ecs.hpp>
 
-// Set up an ECS instance, with a contiguous _tuple of vectors_ storage and a _parallel_ runtime.
+// Set up an ECS instance, with a contiguous _tuple of vectors_ storage and a _parallel_ scheduler.
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::TupleOfVectors,
-  ecs::runtime::Parallel
+  ecs::scheduler::Parallel
 >;
 ```
 
-The two template parameters passed into the `EntityComponentSystem` are the _storage_ and the _runtime_ used.
+The two template parameters passed into the `EntityComponentSystem` are the _storage_ and the _scheduler_ used.
 * The _storage_ is responsible for storing entity and component data and does so in a certain fashion. The available options shipped by default are:
   * `TupleOfVectors`. This storage stores component data of the same type contiguously and adjacently.
   * `VectorOfTuples`. This storage stores component data attached to the same entity contiguously and adjacently.
   * `Scattered`. This storage stores entity and component data in dynamically allocated and fragmented heap locations. This storage option is further configurable.
-* The _runtime_ mandates how systems are scheduled and executed at run-time.
-  * `Sequential`. This runtime executes every system one after the other in the order they are registered in the scene.
-  * `Parallel`. This runtime determines dependencies between systems at compile-time and infers an execution schedule where compatible systems are run concurrently.
+* The _scheduler_ mandates how systems are scheduled and executed at run-time.
+  * `Sequential`. This scheduler executes every system one after the other in the order they are registered in the scene.
+  * `Parallel`. This scheduler determines dependencies between systems at compile-time and infers an execution schedule where compatible systems are run concurrently.
 
 See the library documentation for more information on each of these options.
 
@@ -160,7 +160,7 @@ Sometimes, a system may want to perform certain operations directly on the ECS s
 * Getting information about the scene, e.g., the number of active entities
 * Deferring a critical operation to the end of the frame
 
-These operations are exposed to the systems via a runtime _manager_. To access it, the system must return a callable object (typically a lambda) which is immediately called by the runtime with the manager passed in:
+These operations are exposed to the systems via a runtime _manager_. To access it, the system must return a callable object (typically a lambda) which is immediately called by the scheduler with the manager passed in:
 ```cpp
 auto corpse_remover(ECS::Entity entity, const Hitpoints& hp) const {
   return [&](auto& manager) {
@@ -177,7 +177,7 @@ auto corpse_remover(ECS::Entity entity, const Hitpoints& hp) const {
   };
 }
 ```
-Note, that if an operation done by a system is not parallelizable, but only between different system invocations, it does not need to be deferred. Outer parallelism may still be used, but inner parallelism can't. To prevent the runtime from applying inner parallelism, simply omit the `const` qualifier from the function declaration:
+Note, that if an operation done by a system is not parallelizable, but only between different system invocations, it does not need to be deferred. Outer parallelism may still be used, but inner parallelism can't. To prevent the scheduler from applying inner parallelism, simply omit the `const` qualifier from the function declaration:
 ```cpp
 class ParSystem {
   void operator()(const Flammable&) const {
@@ -211,7 +211,7 @@ while (true)
   scene.update();
 ```
 
-The execution of each system in the scene is done such that the observable behavior is the same as if they executed sequentially (as done in the `Sequential` runtime). The `Parallel` runtime will infer a schedule to allow this.  
+The execution of each system in the scene is done such that the observable behavior is the same as if they executed sequentially (as done in the `Sequential` scheduler). The `Parallel` scheduler will infer a schedule to allow this.  
 Keep in mind that this means that if results from another system are depended on in some system, the results present are those from the last frame:
 ```cpp
 class SystemA {

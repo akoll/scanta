@@ -52,7 +52,7 @@ benchmark = Benchmark(
   axis_params_right='y unit=\\%,xmin=1,xmax=8,ymin=0,',
   main='../component_types.cpp',
   frames=10000,
-  compile_params='-DRUNTIME_SEQUENTIAL -DWIDTH=8u -DITERATIONS=32u',
+  compile_params='-DSCHEDULER_SEQUENTIAL -DWIDTH=8u -DITERATIONS=32u',
   legend_shift='0.075',
   runs=runs,
   plots=[

@@ -11,32 +11,32 @@
 #include "../util/memory_system.hpp"
 #endif
 
-#if defined RUNTIME_SEQUENTIAL
-#include "ecs/runtime/sequential.hpp"
-#elif defined RUNTIME_PARALLEL
-#include "ecs/runtime/parallel.hpp"
+#if defined SCHEDULER_SEQUENTIAL
+#include "ecs/scheduler/sequential.hpp"
+#elif defined SCHEDULER_PARALLEL
+#include "ecs/scheduler/parallel.hpp"
 #else
-static_assert("No runtime strategy set.");
+static_assert("No scheduler option set.");
 #endif
 
 #if defined STORAGE_TOV
 #include "ecs/storage/tuple_of_vectors.hpp"
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::TupleOfVectors,
-  #if defined RUNTIME_SEQUENTIAL
-  ecs::runtime::Sequential
-  #elif defined RUNTIME_PARALLEL
-  ecs::runtime::Parallel
+  #if defined SCHEDULER_SEQUENTIAL
+  ecs::scheduler::Sequential
+  #elif defined SCHEDULER_PARALLEL
+  ecs::scheduler::Parallel
   #endif
 >;
 #elif defined STORAGE_VOT
 #include "ecs/storage/vector_of_tuples.hpp"
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::VectorOfTuples,
-  #if defined RUNTIME_SEQUENTIAL
-  ecs::runtime::Sequential
-  #elif defined RUNTIME_PARALLEL
-  ecs::runtime::Parallel
+  #if defined SCHEDULER_SEQUENTIAL
+  ecs::scheduler::Sequential
+  #elif defined SCHEDULER_PARALLEL
+  ecs::scheduler::Parallel
   #endif
 >;
 #elif defined STORAGE_SCATTERED
@@ -51,10 +51,10 @@ using ECS = ecs::EntityComponentSystem<
     #endif
     ::Storage
   ,
-  #if defined RUNTIME_SEQUENTIAL
-  ecs::runtime::Sequential
-  #elif defined RUNTIME_PARALLEL
-  ecs::runtime::Parallel
+  #if defined SCHEDULER_SEQUENTIAL
+  ecs::scheduler::Sequential
+  #elif defined SCHEDULER_PARALLEL
+  ecs::scheduler::Parallel
   #endif
 >;
 #elif defined STORAGE_ENTT
@@ -62,9 +62,9 @@ using ECS = ecs::EntityComponentSystem<
 using ECS = ecs::EntityComponentSystem<
   ecs::storage::Entt,
   #ifdef OUTER_PARALLEL
-  ecs::runtime::Parallel
+  ecs::scheduler::Parallel
   #else
-  ecs::runtime::Sequential
+  ecs::scheduler::Sequential
   #endif
 >;
 #else
@@ -105,7 +105,9 @@ public:
   {}
 
   void run() {
-    while (_running) _scene.update();
+    // while (_running) _scene.update();
+    for (auto i{0u}; i < FRAME_COUNT + 1; ++i)
+      _scene.update();
   }
 
   bool update() {

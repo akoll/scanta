@@ -35,7 +35,7 @@ benchmark = Benchmark(
   arrowheads=False,
   main='../spawn.cpp',
   frames=2500,
-  compile_params='-DRUNTIME_SEQUENTIAL -DINITIAL_COUNT=0 -DSPAWN_RATE=256',
+  compile_params='-DSCHEDULER_SEQUENTIAL -DINITIAL_COUNT=0 -DSPAWN_RATE=256',
   legend_shift='0.05',
   runs=runs,
   plots=[

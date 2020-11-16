@@ -7,7 +7,7 @@ namespace ecs {
 
 template<template<typename...> typename TStorage, typename... TSystems>
 requires CStorage<TStorage>
-class Runtime {
+class Scheduler {
 public:
   using Entity = typename TStorage<>::Entity;
 protected:
@@ -18,20 +18,20 @@ protected:
 
   /// The runtime manager to be passed into system executions.
   ///
-  /// Systems may need to be able to execute certain runtime operations
+  /// Systems may need to be able to execute certain scheduler operations
   /// and access the underlying storage. Therefor, a _manager_ is provided
   /// to the system execution, on which such operations can be done.
   ///
-  /// @tparam TRuntime The runtime type to be managed.
-  template<typename TRuntime>
+  /// @tparam TScheduler The scheduler type to be managed.
+  template<typename TScheduler>
   class RuntimeManager {
   public:
-    /// Constructs a manager for some runtime and storage.
+    /// Constructs a manager for some scheduler and storage.
     ///
-    /// @param runtime The runtime to be managed.
+    /// @param scheduler The scheduler to be managed.
     /// @param storage The storage to be managed.
-    RuntimeManager(TRuntime& runtime, Storage& storage) :
-      _runtime(runtime),
+    RuntimeManager(TScheduler& scheduler, Storage& storage) :
+      _scheduler(scheduler),
       _storage(storage)
     {}
 
@@ -45,11 +45,11 @@ protected:
       return _storage.get_size();
     }
 
-    /// Defers an operation by queuing it with the runtime.
+    /// Defers an operation by queuing it with the scheduler.
     ///
     /// @param operation The operation to be deferred.
     void defer(auto&& operation) const {
-      _runtime.defer(operation);
+      _scheduler.defer(operation);
     }
 
     // Deferred functions:
@@ -78,32 +78,32 @@ protected:
       });
     }
   protected:
-    /// The runtime managed by this manager.
-    TRuntime& _runtime;
+    /// The scheduler managed by this manager.
+    TScheduler& _scheduler;
     /// The storage managed by this manager.
     Storage& _storage;
   };
 
   /// The deferred manager to be passed into deferred operation executions.
   ///
-  /// Deferred operations may need to be able to execute certain runtime operations
+  /// Deferred operations may need to be able to execute certain scheduler operations
   /// and access the underlying storage. Therefor, a _manager_ is provided
   /// to the deferred call, on which such operations can be done.
   ///
   /// This manager's methods are a superset of the runtime manager's.
   ///
-  /// @tparam TRuntime The runtime type to be managed.
-  template<typename TRuntime>
-  class DeferredManager : public RuntimeManager<TRuntime> {
+  /// @tparam TScheduler The scheduler type to be managed.
+  template<typename TScheduler>
+  class DeferredManager : public RuntimeManager<TScheduler> {
   public:
-    /// Constructs a manager for some sequential runtime.
+    /// Constructs a manager for some sequential scheduler.
     ///
-    /// @param runtime The runtime to be managed.
+    /// @param scheduler The scheduler to be managed.
     /// @param storage The storage to be managed.
-    DeferredManager(TRuntime& runtime, Storage& storage) : RuntimeManager<TRuntime>(runtime, storage) {}
+    DeferredManager(TScheduler& scheduler, Storage& storage) : RuntimeManager<TScheduler>(scheduler, storage) {}
 
-    // Include runtime manager functionality.
-    using RuntimeManager<TRuntime>::get_entity_count;
+    // Include scheduler manager functionality.
+    using RuntimeManager<TScheduler>::get_entity_count;
 
     /// Creates a new entity in the scene.
     ///
@@ -119,8 +119,8 @@ protected:
       _storage.remove_entity(entity);
     }
   protected:
-    using RuntimeManager<TRuntime>::_runtime;
-    using RuntimeManager<TRuntime>::_storage;
+    using RuntimeManager<TScheduler>::_scheduler;
+    using RuntimeManager<TScheduler>::_storage;
   };
 };
 

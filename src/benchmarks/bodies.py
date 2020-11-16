@@ -23,7 +23,7 @@ benchmark = Benchmark(
   dir='bodies/',
   main='../bodies.cpp',
   frames=1000,
-  compile_params='-DRUNTIME_SEQUENTIAL -DSTORAGE_TOV -DWIDTH=128',
+  compile_params='-DSCHEDULER_SEQUENTIAL -DSTORAGE_TOV -DWIDTH=128',
   title='',
   width=10,
   arrowheads=False,

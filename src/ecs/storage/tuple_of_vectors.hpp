@@ -170,7 +170,7 @@ public:
         // TODO: call with manager (since this is sequential)
           callable(Entity{i});
       }
-    } else callable(Entity{SIZE_MAX}); // TODO: move check to runtime to avoid -1-reservation (and also execute if ECS::Entity is required)
+    } else callable(Entity{SIZE_MAX}); // TODO: move check to scheduler to avoid -1-reservation (and also execute if ECS::Entity is required)
   }
 
   // TODO: document
@@ -186,7 +186,7 @@ public:
         // TODO: maybe a parallel manager?
           callable(Entity{i});
       }
-    } else callable(Entity{SIZE_MAX}); // TODO: move check to runtime
+    } else callable(Entity{SIZE_MAX}); // TODO: move check to scheduler
   }
 
   // TODO: Remove this function (it's just for debugging purposes).

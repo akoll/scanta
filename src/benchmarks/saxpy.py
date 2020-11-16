@@ -62,7 +62,7 @@ benchmark = Benchmark(
   arrowheads=False,
   main='../saxpy.cpp',
   frames=1000,
-  compile_params='-DRUNTIME_SEQUENTIAL -DWIDTH={}'.format(width),
+  compile_params='-DSCHEDULER_SEQUENTIAL -DWIDTH={}'.format(width),
   runs=[*runs, cm],
   plots=[
     Plot('minimum frame time', tex_params='"fill=brown!50"', plotruns=[PlotRun(run, min=True) for run in runs]),

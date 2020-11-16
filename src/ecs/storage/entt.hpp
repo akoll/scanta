@@ -119,7 +119,7 @@ public:
       // TODO: static_assert component types handled
       const auto view = _registry.view<TRequiredComponents...>();
       for (auto entity: view) callable(entity);
-    } else callable(Entity{std::numeric_limits<std::uint64_t>::max()}); // TODO: move check to runtime to avoid -1-reservation (and also execute if ECS::Entity is required)
+    } else callable(Entity{std::numeric_limits<std::uint64_t>::max()}); // TODO: move check to scheduler to avoid -1-reservation (and also execute if ECS::Entity is required)
   }
 
   // TODO: document
@@ -132,7 +132,7 @@ public:
       auto view = _registry.view<TRequiredComponents...>();
       #pragma omp parallel for
       for (auto entity: view) callable(entity);
-    } else callable(Entity{std::numeric_limits<unsigned int>::max()}); // TODO: move check to runtime to avoid -1-reservation (and also execute if ECS::Entity is required)
+    } else callable(Entity{std::numeric_limits<unsigned int>::max()}); // TODO: move check to scheduler to avoid -1-reservation (and also execute if ECS::Entity is required)
   }
 
 

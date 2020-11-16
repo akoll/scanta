@@ -310,7 +310,7 @@ namespace ecs::storage {
             callable(static_cast<typename Scattered<options>::Entity>(entity_data));
         }
         // Single-fire systems get a null-pointer as the entity handle.
-      } else callable(typename Scattered<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
+      } else callable(typename Scattered<options>::Entity(nullptr)); // TODO: move check to scheduler to avoid 0-reservation
     }
 
     // TODO: document
@@ -347,7 +347,7 @@ namespace ecs::storage {
           }
         }
         // Single-fire systems get a null-pointer as the entity handle.
-      } else callable(typename Scattered<options>::Entity(nullptr)); // TODO: move check to runtime to avoid 0-reservation
+      } else callable(typename Scattered<options>::Entity(nullptr)); // TODO: move check to scheduler to avoid 0-reservation
     }
 
   private:
