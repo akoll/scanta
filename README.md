@@ -6,7 +6,7 @@
 It is designed to be highly customizable without sacrificing perfomance. Customization is done through selection _design options_ for certain _design choices_.  
 To achieve this, a scaffold implementation is employed with slots for multiple design choices. The scaffold contains any functionality that is universal to all design options.  
 The capability of using different design options shall have the least possible impact on the application's visible behavior, compared to a library with a pre-selected design option for each design choice.  
-Because of this, the design option slots are implemented as template parameters which then allow plugging in different option implementations of some design choice. Because templates are resolved at compile-time, this avoids the performance-loss incurred by using vtable-based polymorphism. \\
+Because of this, the design option slots are implemented as template parameters which then allow plugging in different option implementations of some design choice. Because templates are resolved at compile-time, this avoids the performance-loss incurred by using vtable-based polymorphism.  
 Due to its heavy usage of templates and compile-time calculations (entity layouts and execution schedules are inferred statically), `scanta` is a header-only library.
 
 ## Documentation
