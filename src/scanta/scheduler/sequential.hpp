@@ -7,24 +7,24 @@
 #include <boost/hana.hpp>
 #include <boost/hana/ext/std/tuple.hpp>
 
-#include "ecs/scaffold/scheduler.hpp"
+#include "scanta/scaffold/scheduler.hpp"
 
-#include "ecs/util/timer.hpp"
+#include "scanta/util/timer.hpp"
 
 namespace hana = boost::hana;
 namespace ct = boost::callable_traits;
 
-namespace ecs::scheduler {
+namespace scanta::scheduler {
 
 /// Sequential ECS scheduler, executing systems one after the other.
 ///
 /// @tparam TStorage The storage to be used.
 /// @tparam TSystems The system types that are stored and executed. Usually inferred from the constructor.
 template<template<typename...> typename TStorage, typename... TSystems>
-class Sequential : ecs::Scheduler<TStorage, TSystems...> {
+class Sequential : scanta::Scheduler<TStorage, TSystems...> {
 public:
   /// The base scheduler type to be inherited from.
-  using Scheduler = ecs::Scheduler<TStorage, TSystems...>;
+  using Scheduler = scanta::Scheduler<TStorage, TSystems...>;
 
   /// Redeclaration of the type of this class itself as a type alias.
   /// Allows simpler usage further down.

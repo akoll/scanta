@@ -1,6 +1,6 @@
 # Doxyfile 1.8.18
 
-PROJECT_NAME = "Entity-Component-System"
+PROJECT_NAME = "scanta"
 PROJECT_NUMBER =
 PROJECT_BRIEF = "Configurable header-only Entity-Component-System library."
 PROJECT_LOGO =

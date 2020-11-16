@@ -1,11 +1,11 @@
 #include <cstring>
 #include <cassert>
 
-#include "ecs/storage/scattered.hpp"
+#include "scanta/storage/scattered.hpp"
 
 #include "util/timer.hpp"
 
-using Storage = ecs::storage::ScatteredCustom
+using Storage = scanta::storage::ScatteredCustom
   #ifdef STORAGE_SCATTERED_SMART
   ::WithSmartPointers
   #endif

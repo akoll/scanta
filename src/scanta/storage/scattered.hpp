@@ -12,7 +12,7 @@
 namespace hana = boost::hana;
 using namespace hana::literals;
 
-namespace ecs::storage {
+namespace scanta::storage {
 
   /// Internal namespace only used in this header.
   namespace internal {

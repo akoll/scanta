@@ -6,7 +6,7 @@
 #include "storage.hpp"
 
 /// Namespace containing the ecs library.
-namespace ecs {
+namespace scanta {
 
 /// TODO: Document
 ///

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <boost/hana.hpp>
-#include "ecs/util/callable_traits.hpp"
+#include "scanta/util/callable_traits.hpp"
 
 namespace hana = boost::hana;
 namespace ct = boost::callable_traits;
 
-namespace ecs {
+namespace scanta {
 
 template<typename TEntity, typename... TSystems>
 struct Info {

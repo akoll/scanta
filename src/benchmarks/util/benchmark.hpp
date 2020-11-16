@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "ecs/scaffold/ecs.hpp"
+#include "scanta/scaffold/ecs.hpp"
 
 #include "../util/frame_limit_system.hpp"
 #if defined BENCHMARK_FRAMETIME
@@ -12,37 +12,37 @@
 #endif
 
 #if defined SCHEDULER_SEQUENTIAL
-#include "ecs/scheduler/sequential.hpp"
+#include "scanta/scheduler/sequential.hpp"
 #elif defined SCHEDULER_PARALLEL
-#include "ecs/scheduler/parallel.hpp"
+#include "scanta/scheduler/parallel.hpp"
 #else
 static_assert("No scheduler option set.");
 #endif
 
 #if defined STORAGE_TOV
-#include "ecs/storage/tuple_of_vectors.hpp"
-using ECS = ecs::EntityComponentSystem<
-  ecs::storage::TupleOfVectors,
+#include "scanta/storage/tuple_of_vectors.hpp"
+using ECS = scanta::EntityComponentSystem<
+  scanta::storage::TupleOfVectors,
   #if defined SCHEDULER_SEQUENTIAL
-  ecs::scheduler::Sequential
+  scanta::scheduler::Sequential
   #elif defined SCHEDULER_PARALLEL
-  ecs::scheduler::Parallel
+  scanta::scheduler::Parallel
   #endif
 >;
 #elif defined STORAGE_VOT
-#include "ecs/storage/vector_of_tuples.hpp"
-using ECS = ecs::EntityComponentSystem<
-  ecs::storage::VectorOfTuples,
+#include "scanta/storage/vector_of_tuples.hpp"
+using ECS = scanta::EntityComponentSystem<
+  scanta::storage::VectorOfTuples,
   #if defined SCHEDULER_SEQUENTIAL
-  ecs::scheduler::Sequential
+  scanta::scheduler::Sequential
   #elif defined SCHEDULER_PARALLEL
-  ecs::scheduler::Parallel
+  scanta::scheduler::Parallel
   #endif
 >;
 #elif defined STORAGE_SCATTERED
-#include "ecs/storage/scattered.hpp"
-using ECS = ecs::EntityComponentSystem<
-  ecs::storage::ScatteredCustom
+#include "scanta/storage/scattered.hpp"
+using ECS = scanta::EntityComponentSystem<
+  scanta::storage::ScatteredCustom
     #ifdef STORAGE_SCATTERED_SMART
     ::WithSmartPointers
     #endif
@@ -52,19 +52,19 @@ using ECS = ecs::EntityComponentSystem<
     ::Storage
   ,
   #if defined SCHEDULER_SEQUENTIAL
-  ecs::scheduler::Sequential
+  scanta::scheduler::Sequential
   #elif defined SCHEDULER_PARALLEL
-  ecs::scheduler::Parallel
+  scanta::scheduler::Parallel
   #endif
 >;
 #elif defined STORAGE_ENTT
-#include "ecs/storage/entt.hpp"
-using ECS = ecs::EntityComponentSystem<
-  ecs::storage::Entt,
+#include "scanta/storage/entt.hpp"
+using ECS = scanta::EntityComponentSystem<
+  scanta::storage::Entt,
   #ifdef OUTER_PARALLEL
-  ecs::scheduler::Parallel
+  scanta::scheduler::Parallel
   #else
-  ecs::scheduler::Sequential
+  scanta::scheduler::Sequential
   #endif
 >;
 #else

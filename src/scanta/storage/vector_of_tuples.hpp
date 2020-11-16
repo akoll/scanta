@@ -11,9 +11,9 @@
 namespace hana = boost::hana;
 using namespace hana::literals;
 
-#include "ecs/util/type_index.hpp"
+#include "scanta/util/type_index.hpp"
 
-namespace ecs::storage {
+namespace scanta::storage {
 
 /// TODO: Stores component data in a vector of entity tuples.
 ///

@@ -11,9 +11,9 @@ using namespace hana::literals;
 
 #include <entt/entt.hpp>
 
-#include "ecs/util/type_index.hpp"
+#include "scanta/util/type_index.hpp"
 
-namespace ecs::storage {
+namespace scanta::storage {
 
 /// TODO: Stores components ...
 ///
