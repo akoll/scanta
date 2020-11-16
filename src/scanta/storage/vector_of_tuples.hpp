@@ -229,7 +229,7 @@ private:
   /// number of active entities preceding it (and thus the total number of currently active stored entities).
   size_t shuffle() {
     // If the storage is not fragmented, return immediately.
-    if (!_fragmentation) return _entities.size();
+    if (!_fragmentation) return _data.size();
 
     // If the storage is empty, return immediately.
     if (_data.size() == 0) return 0;
