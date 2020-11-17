@@ -27,8 +27,8 @@ benchmark = Benchmark(
   compile_params='-DENTITY_COUNT=1000000 -DINTERVAL=3333',
   runs=runs,
   plots=[
-    Plot('vecft', title='vector', tex_params='"thick,brown" "x*3333"', plotruns=[PlotRun(runs[0])]),
-    Plot('setft', title='set', tex_params='"thick,blue" "x*3333"', plotruns=[PlotRun(runs[1])]),
+    Plot('vecft', title='vector', tex_params='"thick,green!75!black" "x*3333"', plotruns=[PlotRun(runs[0])]),
+    Plot('setft', title='set', tex_params='"thick,violet" "x*3333"', plotruns=[PlotRun(runs[1])]),
   ]
 )
 
