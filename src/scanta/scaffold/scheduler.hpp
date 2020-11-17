@@ -35,7 +35,7 @@ protected:
       _storage(storage)
     {}
 
-    // Immediately executed functions:
+    // Immediate functions:
 
     /// Returns the size of the underlying entity storage.
     ///
@@ -51,6 +51,16 @@ protected:
     void defer(auto&& operation) const {
       _scheduler.defer(operation);
     }
+
+    /// Test whether or not a component of some type is attached to an entity.
+    ///
+    /// @param entity The entity to be queried.
+    /// @tparam TComponent The component type to be queried.
+    template<typename TComponent>
+    inline bool has_component(Entity entity) const {
+      return _storage.template has_component<TComponent>(entity);
+    }
+
 
     // Deferred functions:
 
@@ -86,9 +96,9 @@ protected:
     /// @param entity The entity to which to attach the component.
     /// @param component The component to be attached.
     template<typename TComponent>
-    void attach_entity(Entity entity, TComponent&& component) const {
+    void attach_component(Entity entity, TComponent&& component) const {
       defer([entity, &component](const auto& manager) {
-        manager.attach_component(entity, std::forward(component));
+        manager.attach_component(entity, std::forward<TComponent>(component));
       });
     }
 
@@ -100,7 +110,7 @@ protected:
     /// @tparam TComponent The type of the component to be detached.
     /// @param entity The entity to be detached from.
     template<typename TComponent>
-    void detach_entity(Entity entity) const {
+    void detach_component(Entity entity) const {
       defer([entity](const auto& manager) {
         manager.template detach_component<TComponent>(entity);
       });
@@ -153,7 +163,7 @@ protected:
     /// @param component The component to be attached.
     template<typename TComponent>
     inline void attach_component(Entity entity, TComponent&& component) const {
-      _storage.attach_component(entity, std::forward(component));
+      _storage.attach_component(entity, std::forward<TComponent>(component));
     }
 
     /// Detaches a component from an entity.
@@ -164,6 +174,16 @@ protected:
     inline void detach_component(Entity entity) {
       _storage.template detach_component<TComponent>(entity);
     }
+
+    /// Returns a reference to a single component of some entity.
+    ///
+    /// @param entity The entity to be accessed.
+    /// @tparam TComponent The component type to be queried.
+    template<typename TComponent>
+    inline TComponent& get_component(Entity entity) const {
+      return _storage.template get_component<TComponent>(entity);
+    }
+
   protected:
     using RuntimeManager<TScheduler>::_scheduler;
     using RuntimeManager<TScheduler>::_storage;

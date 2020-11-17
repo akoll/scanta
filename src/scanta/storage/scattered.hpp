@@ -174,6 +174,16 @@ namespace scanta::storage {
       }
     };
 
+    /// Test whether or not a component of some type is attached to an entity.
+    ///
+    /// @param entity The entity to be queried.
+    /// @tparam TComponent The component type to be queried.
+    template<typename TComponent>
+    bool has_component(Entity entity) const {
+      // TODO: static_assert component type handled
+      return std::get<Pointer<TComponent>>(entity->components);
+    }
+
     /// Returns a reference to a single component of some entity.
     ///
     /// @param entity The entity to be accessed.
@@ -234,6 +244,8 @@ namespace scanta::storage {
     }
 
     /// Detaches a component from an entity.
+    ///
+    /// This operation is idempotent.
     ///
     /// @tparam TComponent The type of the component to be detached.
     /// @param entity The entity to be detached from.

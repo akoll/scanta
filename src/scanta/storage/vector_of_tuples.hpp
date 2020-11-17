@@ -65,6 +65,16 @@ public:
     return _data.size();
   }
 
+  /// Test whether or not a component of some type is attached to an entity.
+  ///
+  /// @param entity The entity to be queried.
+  /// @tparam TComponent The component type to be queried.
+  template<typename TComponent>
+  bool has_component(Entity entity) const {
+    // TODO: static_assert component type handled
+    return std::get<EntityMetadata>(_data[entity]).signature[_component_index<TComponent>];
+  }
+
   /// Returns a reference to a single component of some entity.
   ///
   /// @param entity The entity to be accessed.
@@ -110,6 +120,7 @@ public:
   ///
   /// This disables the component on the entity by mutating the entity signature stored in the metadata.
   /// The component data is not cleared and its memory not released.
+  /// This operation is idempotent.
   template<typename TComponent>
   void detach_component(Entity entity) {
     // TODO: static_assert component type stored
