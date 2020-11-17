@@ -22,7 +22,7 @@ benchmark = Benchmark(
   ylabel='time',
   #axis_params='y unit=s,ybar,bar width=1cm,ymin=0,xtick=data,xticklabels={set, {vector \\\\ from middle}, {vector \\\\ from front}, {vector \\\\ from back}},xmin=-0.5,xmax=3.5,xticklabel style={rotate=-45, anchor=west, xshift=-3mm,yshift=-2mm,align=center}',
   axis_params='change y base, y SI prefix=milli, y unit=s,ymin=0',
-  main='../op_despawn.cpp',
+  main='../despawn.cpp',
   frames=1,
   compile_params='-DENTITY_COUNT=1000000 -DINTERVAL=3333',
   runs=runs,

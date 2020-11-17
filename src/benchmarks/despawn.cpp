@@ -17,7 +17,7 @@ using Storage = scanta::storage::ScatteredCustom
 int main() {
   Storage storage;
   for (auto i{0u}; i < ENTITY_COUNT; ++i)
-    storage.new_entity(size_t{5});
+      storage.new_entity(size_t{5});
   
   size_t de_index = 0;
   while (de_index < ENTITY_COUNT) {

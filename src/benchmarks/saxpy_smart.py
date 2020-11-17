@@ -1,14 +1,26 @@
 from s2bench.cpp2bench import Benchmark, Run, Step, Plot, PlotRun, PlotStub
 
 scattered_smart = Run(
-  name='scattered - smart pointers',
+  name='shared pointers, vector',
   compile_params='-DBENCHMARK_FRAMETIME -DSTORAGE_SCATTERED -DSTORAGE_SCATTERED_SMART',
   run_params='1000000'
 )
 
 scattered = Run(
-  name='scattered - raw pointers',
+  name='raw pointers, vector',
   compile_params='-DBENCHMARK_FRAMETIME -DSTORAGE_SCATTERED',
+  run_params='100000'
+)
+
+scattered_smart_set = Run(
+  name='shared pointers, set',
+  compile_params='-DBENCHMARK_FRAMETIME -DSTORAGE_SCATTERED -DSTORAGE_SCATTERED_SMART -DSTORAGE_SCATTERED_SET',
+  run_params='1000000'
+)
+
+scattered_set = Run(
+  name='raw pointers, set',
+  compile_params='-DBENCHMARK_FRAMETIME -DSTORAGE_SCATTERED -DSTORAGE_SCATTERED_SET',
   run_params='100000'
 )
 
@@ -19,10 +31,12 @@ cm = Run(
   steps=[
     Step(compile_params='-DSTORAGE_SCATTERED -DSTORAGE_SMART'),
     Step(compile_params='-DSTORAGE_SCATTERED'),
+    Step(compile_params='-DSTORAGE_SCATTERED -DSTORAGE_SMART -DSTORAGE_SCATTERED_SET'),
+    Step(compile_params='-DSTORAGE_SCATTERED -DSTORAGE_SCATTERED_SET'),
   ]
 )
 
-runs = [scattered_smart, scattered]
+runs = [scattered_smart, scattered_smart_set, scattered, scattered_set]
 
 width = 64
 
@@ -33,11 +47,11 @@ benchmark = Benchmark(
   height=8,
   xlabel='',
   ylabel='frame time',
-  axis_params='change y base, y SI prefix=milli, y unit=s,ymin=0,ybar,xtick=data,xticklabels={},xmin=-0.5,xmax=1.5,grid=both,minor tick num=3'.format(
+  axis_params='change y base, y SI prefix=milli, y unit=s,ymin=0,ybar,xtick=data,xticklabels={},xmin=-0.5,xmax=3.5,grid=both,minor tick num=3,'.format(
     '{' + ', '.join(['{' + run.name + '}' for run in runs]) + '}'
-  ),
+  ) + 'xticklabel style={rotate=-45,yshift=4mm,xshift=2mm,align=left}',
   ylabel_right='cache misses',
-  axis_params_right='ybar, y unit=percent,ymin=0,xmin=-0.5,xmax=1.5',
+  axis_params_right='ybar, y unit=percent,ymin=0,xmin=-0.5,xmax=3.5',
   arrowheads=False,
   main='../saxpy.cpp',
   frames=1000,
