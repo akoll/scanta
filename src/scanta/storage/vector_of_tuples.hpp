@@ -80,10 +80,10 @@ public:
   ///
   /// This also attaches the passed in component to this entity (i.e. the signature bit is set).
   /// All other components attached to this entity remain attached and unchanged.
-  /// @param entity The entity for which to set the component.
+  /// @param entity The entity to which to attach the component.
   /// @param component The component data to be assigned.
   template<typename TComponent>
-  void set_component(Entity entity, TComponent&& component) {
+  void attach_component(Entity entity, TComponent&& component) {
     // TODO: static_assert component type stored
     // Set the associated component bit in the entity signature.
     std::get<EntityMetadata>(_data[entity]).signature |= signature_of<std::decay_t<TComponent>>;
@@ -103,7 +103,7 @@ public:
     // Set the associated component bits in the entity signature.
     std::get<EntityMetadata>(_data[entity]).signature = signature_of<std::decay_t<TComponents>...>;
     // Set all passed in components using a fold expression.
-    (set_component(entity, std::forward<TComponents>(components)), ...);
+    (attach_component(entity, std::forward<TComponents>(components)), ...);
   }
 
   /// Removes a component association from some entity.
@@ -111,7 +111,7 @@ public:
   /// This disables the component on the entity by mutating the entity signature stored in the metadata.
   /// The component data is not cleared and its memory not released.
   template<typename TComponent>
-  void remove_component(Entity entity) {
+  void detach_component(Entity entity) {
     // TODO: static_assert component type stored
     // Unset the associated component bit in the entity signature.
     std::get<EntityMetadata>(_data[entity]).signature &= !signature_of<std::decay_t<TComponent>>;

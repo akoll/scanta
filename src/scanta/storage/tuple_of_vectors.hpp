@@ -84,10 +84,10 @@ public:
   ///
   /// This also attaches the passed in component to this entity (i.e. the signature bit is set).
   /// All other components attached to this entity remain attached and unchanged.
-  /// @param entity The entity for which to set the component.
+  /// @param entity The entity to which to attach the component.
   /// @param component The component data to be assigned.
   template<typename TComponent>
-  void set_component(Entity entity, TComponent&& component) {
+  void attach_component(Entity entity, TComponent&& component) {
     // TODO: static_assert component type stored
     // Set the associated component bit in the entity signature.
     _entities[entity].signature |= signature_of<std::decay_t<TComponent>>;
@@ -107,7 +107,7 @@ public:
     // Set the associated component bits in the entity signature.
     _entities[entity].signature = signature_of<std::decay_t<TComponents>...>;
     // Set all passed in components using a fold expression.
-    (set_component(entity, std::forward<TComponents>(components)), ...);
+    (attach_component(entity, std::forward<TComponents>(components)), ...);
   }
 
   /// Detaches a component from an entity.
@@ -118,7 +118,7 @@ public:
   /// @tparam TComponent The type of the component to be detached.
   /// @param entity The entity to be detached from.
   template<typename TComponent>
-  void remove_component(Entity entity) {
+  void detach_component(Entity entity) {
     // TODO: static_assert component type stored
     // Unset the associated component bit in the entity signature.
     _entities[entity].signature &= !signature_of<std::decay_t<TComponent>>;

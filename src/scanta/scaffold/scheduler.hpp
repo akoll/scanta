@@ -77,6 +77,34 @@ protected:
         manager.remove_entity(entity);
       });
     }
+
+    /// Attaches a component to an entity.
+    ///
+    /// When called, the entity is not removed immediately,
+    /// but merely queued as a deferred operation.
+    ///
+    /// @param entity The entity to which to attach the component.
+    /// @param component The component to be attached.
+    template<typename TComponent>
+    void attach_entity(Entity entity, TComponent&& component) const {
+      defer([entity, &component](const auto& manager) {
+        manager.attach_component(entity, std::forward(component));
+      });
+    }
+
+    /// Detaches a component from an entity.
+    ///
+    /// When called, the entity is not removed immediately,
+    /// but merely queued as a deferred operation.
+    ///
+    /// @tparam TComponent The type of the component to be detached.
+    /// @param entity The entity to be detached from.
+    template<typename TComponent>
+    void detach_entity(Entity entity) const {
+      defer([entity](const auto& manager) {
+        manager.template detach_component<TComponent>(entity);
+      });
+    }
   protected:
     /// The scheduler managed by this manager.
     TScheduler& _scheduler;
@@ -117,6 +145,24 @@ protected:
     /// @param entity The entity to be removed.
     inline void remove_entity(Entity entity) const {
       _storage.remove_entity(entity);
+    }
+
+    /// Attaches a component to an entity.
+    ///
+    /// @param entity The entity to which to attach the component.
+    /// @param component The component to be attached.
+    template<typename TComponent>
+    inline void attach_component(Entity entity, TComponent&& component) const {
+      _storage.attach_component(entity, std::forward(component));
+    }
+
+    /// Detaches a component from an entity.
+    ///
+    /// @tparam TComponent The type of the component to be detached.
+    /// @param entity The entity to be detached from.
+    template<typename TComponent>
+    inline void detach_component(Entity entity) {
+      _storage.template detach_component<TComponent>(entity);
     }
   protected:
     using RuntimeManager<TScheduler>::_scheduler;

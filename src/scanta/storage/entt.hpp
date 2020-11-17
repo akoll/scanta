@@ -60,7 +60,7 @@ public:
   /// @param entity The entity for which to set the component.
   /// @param component The component data to be assigned.
   template<typename TComponent>
-  void set_component(Entity entity, TComponent&& component) {
+  void attach_component(Entity entity, TComponent&& component) {
     // TODO: static_assert component type stored
     // _registry.get<TComponent>(entity) = std::forward<TComponent>(component);
     _registry.emplace_or_replace<TComponent>(entity, std::forward<TComponent>(component));
@@ -70,15 +70,15 @@ public:
   ///
   /// Any components previously attached to the entity and not passed in again are detached.
   /// The passed in components make up the new complete set of components attached to that entity.
-  /// @param entity The entity for which to set the components.
-  /// @param components The components to be assigned.
+  /// @param entity The entity to which to attach the component.
+  /// @param component The component data to be assigned.
   template<typename... TComponents>
   void set_components(Entity entity, TComponents&&... components) {
     // TODO: static_assert component type stored
     // Detach all components from the entity.
     _registry.remove_all(entity);
     // Set all passed in components using a fold expression.
-    (set_component(entity, std::forward<TComponents>(components)), ...);
+    (attach_component(entity, std::forward<TComponents>(components)), ...);
   }
 
   // TODO: Test if this function works.
@@ -87,7 +87,7 @@ public:
   /// This disables the component on the entity by mutating the entity signature stored in the metadata.
   /// The component data is not cleared and its memory not released.
   template<typename TComponent>
-  void remove_component(Entity entity) {
+  void detach_component(Entity entity) {
     // TODO: static_assert component type stored
     _registry.remove<TComponent>(entity);
   }

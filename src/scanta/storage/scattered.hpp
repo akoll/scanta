@@ -197,10 +197,10 @@ namespace scanta::storage {
     ///
     /// This also attaches the passed in component to this entity (i.e. the signature bit is set).
     /// All other components attached to this entity remain attached and unchanged.
-    /// @param entity The entity for which to set the component.
-    /// @param component The component data to be assigned.
+  /// @param entity The entity to which to attach the component.
+  /// @param component The component data to be assigned.
     template<typename TComponent>
-    void set_component(Entity entity, TComponent&& component) {
+    void attach_component(Entity entity, TComponent&& component) {
       // TODO: static_assert component type stored
       // Copy component from parameter.
       if constexpr (options.smart_pointers)
@@ -228,7 +228,7 @@ namespace scanta::storage {
       // The component rvalue parameter-pack is unpacked using a fold-expression.
       (
         // Attach the component to the entity.
-        set_component(entity, std::forward<TComponents>(components)),
+        attach_component(entity, std::forward<TComponents>(components)),
         ... // Repeat for every component passed in.
       );
     }
@@ -238,7 +238,7 @@ namespace scanta::storage {
     /// @tparam TComponent The type of the component to be detached.
     /// @param entity The entity to be detached from.
     template<typename TComponent>
-    void remove_component(Entity entity) {
+    void detach_component(Entity entity) {
       // TODO: static_assert component type stored
       // If regular pointers are used, memory needs to be freed first using `delete`.
       if constexpr (!options.smart_pointers)
