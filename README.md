@@ -115,7 +115,7 @@ private:
   int count = 0;
 };
 ```
-Note, when system state is mutated in the execution function, it can not be marked `const` anymore. `const` systems are executed with `inner parallelism`, meaning that they are applied to all matching entities concurrently:
+When system state is mutated in the execution function, it can not be marked `const` anymore. `const` systems are executed with `inner parallelism`, meaning that they are applied to all matching entities concurrently:
 ```cpp
 class FireFighter {
 public:
@@ -185,7 +185,7 @@ auto corpse_remover(ECS::Entity entity, const Hitpoints& hp) const {
   };
 }
 ```
-Note, that if an operation done by a system is not parallelizable, but only between different system invocations, it does not need to be deferred. Outer parallelism may still be used, but inner parallelism can't. To prevent the scheduler from applying inner parallelism, simply omit the `const` qualifier from the function declaration:
+If an operation done by a system is not parallelizable, but only conflicts with other system invocations, it does not need to be deferred. Outer parallelism may still be used, but inner parallelism can't. To prevent the scheduler from applying inner parallelism, simply omit the `const` qualifier from the function declaration:
 ```cpp
 class ParSystem {
   void operator()(const Flammable&) const {
