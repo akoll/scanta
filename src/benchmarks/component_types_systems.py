@@ -20,12 +20,14 @@ runs = [
   Run(
     name='seq',
     compile_params='-DBENCHMARK_FRAMETIME -DSCHEDULER_SEQUENTIAL',
-    steps=steps
+    steps=steps,
+    measure_compile_time=True
   ),
   Run(
     name='par',
     compile_params='-DBENCHMARK_FRAMETIME -DSCHEDULER_PARALLEL',
-    steps=steps
+    steps=steps,
+    measure_compile_time=True
   ),
 ]
 

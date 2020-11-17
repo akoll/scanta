@@ -89,12 +89,14 @@ class Run:
     steps=None,
     instrument='native',
     repetitions=1,
+    measure_compile_time=False
   ):
     self.name = name
     self.compile_params = compile_params
     self.run_params = run_params
     self.instrument = instrument
     self.repetitions = repetitions
+    self.measure_compile_time = measure_compile_time
 
     if steps == None:
       self.steps = [
@@ -285,10 +287,20 @@ CPARAMS = -DFRAME_COUNT=%frames% %compile_params%
 
       for step_index in (range(len(run.steps)) if not run.is_homogenous() else range(1)):
         step_cparams = run.steps[step_index].compile_params
-        file.write("""
+
+        compile_command = ''
+        if run.measure_compile_time:
+          compile_command = """
 %outfile%: %main% $(DEPS)
 	\\time -f %e $(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params% 2>%concat% %runname%.compile.bench
-          """.strip()
+          """
+        else:
+          compile_command = """
+%outfile%: %main% $(DEPS)
+	$(CC) -MMD -o $@ $< $(CFLAGS) $(CINCLUDES) $(CPARAMS) %compile_params%
+          """
+
+        file.write(compile_command.strip()
           .replace('%main%', self.main)
           .replace('%compile_params%', '{} {}'.format(run.compile_params, step_cparams))
           .replace('%outfile%', filename + ('_' + str(step_index) if not run.is_homogenous() else '') +  '.out')
