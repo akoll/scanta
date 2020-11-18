@@ -151,7 +151,7 @@ public:
     ++_fragmentation;
   }
 
-  /// Execute a callable on each entity with all required components attached.
+  /// Executes a callable on each entity with all required components attached.
   ///
   /// Requires no inactive entity to exist with an index smaller than the highest active one.
   /// @tparam TRequiredComponents The set of component types required to be attached to an entity to be processed.
@@ -173,7 +173,12 @@ public:
     } else callable(Entity{SIZE_MAX}); // TODO: move check to scheduler to avoid -1-reservation (and also execute if ECS::Entity is required)
   }
 
-  // TODO: document
+  /// Executes a callable on each entity with all required components attached.
+  /// Employs inner parallelism.
+  ///
+  /// Requires no inactive entity to exist with an index smaller than the highest active one.
+  /// @tparam TRequiredComponents The set of component types required to be attached to an entity to be processed.
+  /// @param callable The callable to be executed with each matched entity's index as an argument.
   // TODO: parametrize parallelization
   template<typename... TRequiredComponents>
   void for_entities_with_parallel(auto&& callable) const {

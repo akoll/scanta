@@ -73,21 +73,31 @@ namespace scanta::storage {
       /// Constructor for converting from plain void-pointers.
       Entity(VoidPointer pointer) : _pointer(pointer) {}
 
+      /// Equality operator.
       bool operator==(const Entity& rhs) {
         return rhs._pointer == _pointer;
       }
 
+      /// Ineuality operator.
       bool operator!=(const Entity& rhs) {
         return rhs._pointer != _pointer;
       }
     };
 
+    /// Executes a callable on each entity with all required components attached.
+    ///
+    /// Because no components are stored in this partial specialization,
+    /// this always equates to a single-fire system call.
     template<typename... TRequiredComponents>
     void for_entities_with(auto&& callable) const {
       if (sizeof...(TRequiredComponents) == 0)
         callable(Entity(nullptr));
     }
 
+    /// Executes a callable on each entity with all required components attached.
+    ///
+    /// Because no components are stored in this partial specialization,
+    /// this always equates to a single-fire system call.
     template<typename... TRequiredComponents>
     void for_entities_with_parallel(auto&& callable) const {
       if (sizeof...(TRequiredComponents) == 0)
@@ -325,7 +335,7 @@ namespace scanta::storage {
       if constexpr (!options.smart_pointers) delete entity;
     }
 
-    /// Execute a callable on each entity with all required components attached.
+    /// Executes a callable on each entity with all required components attached.
     ///
     /// @tparam TRequiredComponents The set of component types required to be attached to an entity to be processed.
     /// @param callable The callable to be executed with each matched entity's index as an argument.
@@ -347,7 +357,11 @@ namespace scanta::storage {
       } else callable(typename Scattered<options>::Entity(nullptr)); // TODO: move check to scheduler to avoid 0-reservation
     }
 
-    // TODO: document
+    /// Executes a callable on each entity with all required components attached.
+    /// Employs inner parallelism.
+    ///
+    /// @tparam TRequiredComponents The set of component types required to be attached to an entity to be processed.
+    /// @param callable The callable to be executed with each matched entity's index as an argument.
     template<typename... TRequiredComponents>
     void for_entities_with_parallel(auto&& callable) const {
       /// If the list of required component types is empty, the callable is called exactly once.
