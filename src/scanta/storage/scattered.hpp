@@ -125,6 +125,17 @@ namespace scanta::storage {
       /// When no component of a type is attached to the entity, that pointer is null.
       std::tuple<Pointer<TStoredComponents>...> components;
 
+      EntityMetadata& operator=(EntityMetadata&& other) {
+        components = std::move(other.components);
+        return *this;
+      }
+
+      /// Destructor which deletes all components.
+      ~EntityMetadata() {
+        if constexpr (!options.smart_pointers)
+          ((delete std::get<Pointer<std::decay_t<TStoredComponents>>>(components)), ...);
+      }
+
       /// Deletes all components associated with this entity.
       void clear_components() {
         // If regular pointers are used, memory needs to be freed first using `delete`.
@@ -132,12 +143,6 @@ namespace scanta::storage {
           ((delete std::get<Pointer<std::decay_t<TStoredComponents>>>(components)), ...);
         // Set all pointer to null using a fold-expression.
         ((std::get<Pointer<std::decay_t<TStoredComponents>>>(components) = nullptr), ...);
-      }
-
-      /// Destructor which deletes all components.
-      ~EntityMetadata() {
-        if constexpr (!options.smart_pointers)
-          ((delete std::get<Pointer<std::decay_t<TStoredComponents>>>(components)), ...);
       }
     };
 
@@ -305,9 +310,12 @@ namespace scanta::storage {
         // Find the entity in the vector of pointers. This is O(N).
         auto it = std::find(_entities.begin(), _entities.end(), static_cast<Pointer<EntityMetadata>>(entity));
         // If the entity has been found (/ is stored).
-        if (it != _entities.end())
+        if (it != _entities.end()) {
           // Remove it from the entity vector.
-          _entities.erase(it);
+          if (it != _entities.back())
+            *it = std::move(_entities.back());
+          _entities.pop_back();
+        }
         // TODO: else: entity not found
       } else {
         // Remove the entity from the map. This is on average O(1).
