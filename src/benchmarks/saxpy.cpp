@@ -1,4 +1,6 @@
 #include <cstring>
+#include <thread>
+#include <chrono>
 
 #include "util/benchmark.hpp"
 
@@ -34,6 +36,9 @@ int main(int argc, const char** argv) {
   benchmark::Scene scene(SaxpySystem(9.81f));
   for (auto i{0u}; i < count; ++i)
     scene->manager.new_entity(X{3.1416f}, Y{1.68f});
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+
   scene.run();
   return 0;
 }

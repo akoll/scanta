@@ -89,7 +89,9 @@ class Run:
     steps=None,
     instrument='native',
     repetitions=1,
-    measure_compile_time=False
+    measure_compile_time=False,
+    delay=0,
+    only_loads=False
   ):
     self.name = name
     self.compile_params = compile_params
@@ -97,6 +99,8 @@ class Run:
     self.instrument = instrument
     self.repetitions = repetitions
     self.measure_compile_time = measure_compile_time
+    self.delay = delay
+    self.only_loads = only_loads
 
     if steps == None:
       self.steps = [
@@ -368,7 +372,7 @@ clean:
       )
       repetitions = step.repetitions if step.repetitions != None else run.repetitions
       if (run.instrument == 'perf'):
-        command = '(perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , -r {} {} 2>&1) | ../s2bench/perf2bench.py'.format(repetitions, command)
+        command = '(perf stat -e L1-dcache-loads,L1-dcache-load-misses -x , -r {} -D {} {} 2>&1) | ../s2bench/perf2bench.py {}'.format(repetitions, run.delay, command, 'loads' if run.only_loads else '')
       elif (run.instrument == 'frameavg'):
         command = '(for _ in {1..%s}; do %s; done) | ../s2bench/bench2avg.py %s' % (repetitions, command, repetitions)
       return command

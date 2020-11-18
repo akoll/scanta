@@ -10,6 +10,22 @@ cm = Run(
   name='cm',
   run_params='1000000',
   instrument='perf',
+  delay=3000,
+  steps=[
+    Step(compile_params='-DSTORAGE_TOV'),
+    Step(compile_params='-DSTORAGE_SCATTERED'),
+    Step(compile_params='-DSTORAGE_VOT'),
+    Step(compile_params='-DSTORAGE_ENTT'),
+  ]
+)
+
+cl = Run(
+  name='cl',
+  run_params='1000000',
+  instrument='perf',
+  repetitions=4,
+  delay=3000,
+  only_loads=True,
   steps=[
     Step(compile_params='-DSTORAGE_TOV'),
     Step(compile_params='-DSTORAGE_SCATTERED'),
@@ -42,7 +58,7 @@ entt = Run(
   run_params='100000'
 )
 
-runs = [tov, scattered, vot, entt]
+runs = [tov, vot, scattered, entt]
 
 width = 64
 
@@ -56,14 +72,15 @@ benchmark = Benchmark(
   ylabel='frame time',
   axis_params='change y base, y SI prefix=milli, y unit=s,ymin=0,ybar,xtick=data,xticklabels={},xmin=-0.5,xmax=3.5,grid=both,minor tick num=3'.format(
     '{' + ', '.join(['{' + run.name + '}' for run in runs]) + '}'
-  ),
+  ) + 'xticklabel style={rotate=-10}',
   ylabel_right='cache misses',
   axis_params_right='ybar, y unit=percent,ymin=0,xmin=-0.5,xmax=3.5',
   arrowheads=False,
+  legend_shift='0.1',
   main='../saxpy.cpp',
   frames=1000,
   compile_params='-DSCHEDULER_SEQUENTIAL -DWIDTH={}'.format(width),
-  runs=[*runs, cm],
+  runs=[*runs, cm, cl],
   plots=[
     Plot('minimum frame time', tex_params='"fill=brown!50"', plotruns=[PlotRun(run, min=True) for run in runs]),
     Plot('average frame time', tex_params='"fill=brown!75"', plotruns=[PlotRun(run, avg=True) for run in runs]),
