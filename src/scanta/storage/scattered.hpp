@@ -182,6 +182,12 @@ namespace scanta::storage {
       }
     };
 
+    ~Scattered() {
+      // If smart pointers are not used, delete all entities.
+      if constexpr (!options.smart_pointers)
+        for (auto entity : _entities) delete entity;
+    }
+
     /// Test whether or not a component of some type is attached to an entity.
     ///
     /// @param entity The entity to be queried.
