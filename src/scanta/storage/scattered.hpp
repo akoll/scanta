@@ -72,6 +72,14 @@ namespace scanta::storage {
 
       /// Constructor for converting from plain void-pointers.
       Entity(VoidPointer pointer) : _pointer(pointer) {}
+
+      bool operator==(const Entity& rhs) {
+        return rhs._pointer == _pointer;
+      }
+
+      bool operator!=(const Entity& rhs) {
+        return rhs._pointer != _pointer;
+      }
     };
 
     template<typename... TRequiredComponents>
