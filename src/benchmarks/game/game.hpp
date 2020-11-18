@@ -14,6 +14,7 @@ namespace ct = boost::callable_traits;
 #include "input.hpp"
 #include "player.hpp"
 #include "render.hpp"
+#include "fire.hpp"
 
 template<typename ECS, template<typename...> typename TScene = ECS::template Scene>
 class Game {
@@ -26,9 +27,13 @@ public:
       InputSystem{},
       ControllerSystem{},
       MovementSystem{},
+      CombustionSystem{},
+      WaterSystem{},
       CollisionSystem{},
+      ColliderCleanupSystem{},
       RectangleRenderSystem(_renderer),
-      SpriteRenderSystem(_renderer)
+      SpriteRenderSystem(_renderer),
+      FireRenderSystem(_renderer)
     )
   {
     if(!_window) {
@@ -51,14 +56,31 @@ public:
       Transform{{320, 240}},
       RigidBody{},
       Sprite{_player_texture},
-      Collider{{-16, -16, 16, 16}}
+      Collider{{-16, -16, 16, 16}},
+      Flammable{}
     );
 
     _scene->manager.new_entity(
-      Transform{{0, 0}},
-      Rectangle{{0, 0, 100, 100}, {0xff, 0x00, 0xff}},
-      Collider{{0, 0, 100, 100}}
+      Transform{{100, 100}},
+      Rectangle{{-32, -32, 32, 32}, {0xff, 0x00, 0x00}},
+      Collider{{-32, -32, 32, 32}},
+      Flammable{true}
     );
+
+    _scene->manager.new_entity(
+      Transform{{500, 200}},
+      Rectangle{{-32, -32, 32, 32}, {0xff, 0x00, 0x00}},
+      Collider{{-32, -32, 32, 32}},
+      Flammable{}
+    );
+
+    _scene->manager.new_entity(
+      Transform{{300, 400}},
+      Rectangle{{-32, -32, 32, 32}, {0x00, 0x00, 0xff}},
+      Collider{{-32, -32, 32, 32}},
+      Water{}
+    );
+
   }
 
   ~Game() {
@@ -93,8 +115,12 @@ private:
     InputSystem,
     ControllerSystem,
     MovementSystem,
+    CombustionSystem,
+    WaterSystem,
     CollisionSystem,
+    ColliderCleanupSystem,
     RectangleRenderSystem,
-    SpriteRenderSystem
+    SpriteRenderSystem,
+    FireRenderSystem
   > _scene;
 };
