@@ -5,6 +5,7 @@ import re
 
 
 only_loads = sys.argv[1] == 'loads' if len(sys.argv) > 1 else False
+only_misses = sys.argv[1] == 'misses' if len(sys.argv) > 1 else False
 
 loads = None
 misses = None
@@ -20,6 +21,11 @@ for line in sys.stdin:
 if only_loads:
   if loads:
     print(loads)
+  else:
+    exit(1)
+elif only_misses:
+  if misses:
+    print(misses)
   else:
     exit(1)
 else:
