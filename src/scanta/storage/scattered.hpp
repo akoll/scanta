@@ -322,7 +322,7 @@ namespace scanta::storage {
         // If the entity has been found (/ is stored).
         if (it != _entities.end()) {
           // Remove it from the entity vector.
-          if (it != _entities.back())
+          if (it < _entities.end() - 1)
             *it = std::move(_entities.back());
           _entities.pop_back();
         }
