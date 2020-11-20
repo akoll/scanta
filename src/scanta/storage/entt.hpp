@@ -30,7 +30,7 @@ public:
   /// The handle type for systems to reference entities with.
   ///
   /// This does _not_ use `entt::entity`, because the default entity type
-  /// is a `uint32_t`, which imposes an entity count limit surpassed in this
+  /// is a `uint32_t` which imposes an entity count limit surpassed in this
   /// benchmark. Thus, a 64-bit integer is used instead.
   using Entity = std::uint64_t;
 
@@ -140,7 +140,7 @@ private:
   /// The wrapped entt registry.
   ///
   /// This does _not_ use the default `eentt::registry`, because the default entity type
-  /// (`entt::entity`) is a uint32_t, which imposes an entity count limit surpassed in this
+  /// (`entt::entity`) is a uint32_t which imposes an entity count limit surpassed in this
   /// benchmark. Thus, a 64-bit integer is used instead.
   entt::basic_registry<std::uint64_t> _registry;
 };

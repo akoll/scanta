@@ -261,7 +261,7 @@ private:
 
   /// Rearrange entity metadata and component data to have all active entities packed sequentially.
   ///
-  /// This is essentially quicksort on a list of binary values (the `active` booleans), which takes only one iteration (no recursion required).
+  /// This is essentially quicksort on a list of binary values (the `active` booleans) which takes only one iteration (no recursion required).
   ///
   /// After shuffling, no inactive entity lies before an active one in the vectors.
   /// Thus all active entities can be iterated contiguously.

@@ -54,7 +54,7 @@ namespace scanta::storage {
     /// The base entity handle type of the scattered storage.
     ///
     /// This entity handle type is used for the declaration of systems. A scattered storage instance with stored component types specified
-    /// defines another entity handle type, which can be converted from and to this one.
+    /// defines another entity handle type which can be converted from and to this one.
     /// A void-pointer is wrapped as the handle type, since the underlying entity metadata type is not known without component types.
     class Entity {
       // All other Scattered classes are friends, so they can access the void-pointer for casting.
