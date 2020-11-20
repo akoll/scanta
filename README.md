@@ -18,6 +18,10 @@ For compiling library headers:
 * [gcc](https://gcc.gnu.org/) (tested on 10.2.0-2) with [OpenMP](https://www.openmp.org/) support
 * [clang](https://clang.llvm.org/) is [not supported](http://clang.llvm.org/cxx_status.html) as of now, because it does not support [custom class instances as non-type template parameters](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0732r2.pdf)
 * [boost libraries](https://www.boost.org/) ([hana](http://boostorg.github.io/hana/), [callable_traits](https://www.boost.org/doc/libs/1_67_0/libs/callable_traits/doc/html/index.html)) (tested on 1.72.0-2)
+* The following libraries are included as submodules and required for compiling `scanta`:
+  * [bitset2](https://github.com/ClaasBontus/bitset2) at `lib/bitset2`
+  * [EnTT](https://github.com/skypjack/entt) at `lib/entt`
+  * [taskflow](https://github.com/taskflow/taskflow) at `lib/taskflow`
 
 When compiling, make sure to include the `src/` directory.  
 
