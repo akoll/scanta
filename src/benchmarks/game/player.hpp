@@ -7,6 +7,11 @@ struct Playable {
   float speed = 100.0f;
 };
 
+struct Mortal {
+  float max_hp;
+  float hp = max_hp;
+};
+
 class ControllerSystem {
 public:
   void operator()(const InputSystem& input, const Playable& player, RigidBody& body) const {

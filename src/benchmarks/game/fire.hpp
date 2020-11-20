@@ -1,6 +1,7 @@
 #pragma once
 
 #include "physics.hpp"
+#include "player.hpp"
 
 struct Flammable {
   bool on_fire = false;
@@ -17,6 +18,18 @@ public:
               manager.template get_component<Flammable>(entity).on_fire = true;
           });
         }
+      }
+    };
+  }
+};
+
+class FireDamageSystem {
+public:
+  auto operator()(ECS::Entity entity, const Flammable& flammable, Mortal& mortal, float delta_time) {
+    return [&, entity, delta_time](const auto& manager) {
+      if (flammable.on_fire) {
+        mortal.hp -= delta_time;
+        if (mortal.hp <= 0) manager.remove_entity(entity);
       }
     };
   }

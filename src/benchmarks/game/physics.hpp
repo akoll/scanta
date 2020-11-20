@@ -34,19 +34,48 @@ public:
       for (auto group : _collisions) {
         for (auto other : group) {
           auto&& [ other_entity, other_transform, other_collider ] = other;
+          auto el = transform.pos.x + collider.bounds.x;
+          auto et = transform.pos.y + collider.bounds.y;
+          auto er = transform.pos.x + collider.bounds.z;
+          auto eb = transform.pos.y + collider.bounds.w;
+          auto oel = other_transform.get().pos.x + other_collider.get().bounds.x;
+          auto oet = other_transform.get().pos.y + other_collider.get().bounds.y;
+          auto oer = other_transform.get().pos.x + other_collider.get().bounds.z;
+          auto oeb = other_transform.get().pos.y + other_collider.get().bounds.w;
           if (
             other_entity != entity
             && ((
-                 other_collider.get().bounds.z + other_transform.get().pos.x > collider.bounds.x + transform.pos.x
-              && other_collider.get().bounds.x + other_transform.get().pos.x < collider.bounds.z + transform.pos.y
-              && other_collider.get().bounds.w + other_transform.get().pos.y > collider.bounds.y + transform.pos.y
-              && other_collider.get().bounds.y + other_transform.get().pos.y < collider.bounds.w + transform.pos.y
+              el > oel && el < oer
+              && et > oet && et < oeb
             )
             || (
-                 other_collider.get().bounds.z + other_transform.get().pos.x < collider.bounds.x + transform.pos.x
-              && other_collider.get().bounds.x + other_transform.get().pos.x > collider.bounds.z + transform.pos.y
-              && other_collider.get().bounds.w + other_transform.get().pos.y < collider.bounds.y + transform.pos.y
-              && other_collider.get().bounds.y + other_transform.get().pos.y > collider.bounds.w + transform.pos.y
+              er > oel && er < oer
+              && eb > oet && eb < oeb
+            )
+            || (
+              er > oel && er < oer
+              && et > oet && et < oeb
+            )
+            || (
+              el > oel && el < oer
+              && eb > oet && eb < oeb
+            )
+
+            || (
+              oel > el && oel < er
+              && oet > et && oet < eb
+            )
+            || (
+              oer > el && oer < er
+              && oeb > et && oeb < eb
+            )
+            || (
+              oer > el && oer < er
+              && oet > et && oet < eb
+            )
+            || (
+              oel > el && oel < er
+              && oeb > et && oeb < eb
             ))
           ) {
             group.push_back({ entity, transform, collider });
