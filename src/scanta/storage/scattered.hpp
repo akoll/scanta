@@ -39,6 +39,44 @@ namespace scanta::storage {
     }
   } scattered_options;
 
+    /// The base entity handle type of the scattered storage.
+    ///
+    /// This entity handle type is used for the declaration of systems. A scattered storage instance with stored component types specified
+    /// defines another entity handle type which can be converted from and to this one.
+    /// A void-pointer is wrapped as the handle type, since the underlying entity metadata type is not known without component types.
+    template <bool smart_pointers>
+    class EntityReference {
+      // All other Scattered classes are friends, so they can access the void-pointer for casting.
+      template<ScatteredOptions, typename...>
+      friend class Scattered;
+
+      template<bool>
+      friend class std::hash;
+    private:
+      /// The void-pointer type for this storage.
+      ///
+      /// If smart pointers are used, uses a shared pointer, otherwise a regular pointer.
+      using VoidPointer = typename std::conditional<smart_pointers, std::shared_ptr<void>, void*>::type;
+      VoidPointer _pointer;
+    public:
+      /// Default constructor.
+      EntityReference() = default;
+
+      /// Constructor for converting from plain void-pointers.
+      EntityReference(VoidPointer pointer) : _pointer(pointer) {}
+
+      /// Equality operator.
+      bool operator==(const EntityReference& rhs) const {
+        return rhs._pointer == _pointer;
+      }
+
+      /// Ineuality operator.
+      bool operator!=(const EntityReference& rhs) const {
+        return rhs._pointer != _pointer;
+
+      }
+    };
+
   /// Base declaration for partial specialization.
   template<ScatteredOptions options, typename... TStoredComponents>
   class Scattered;
@@ -51,38 +89,8 @@ namespace scanta::storage {
   template<ScatteredOptions options>
   class Scattered<options> {
   public:
-    /// The base entity handle type of the scattered storage.
-    ///
-    /// This entity handle type is used for the declaration of systems. A scattered storage instance with stored component types specified
-    /// defines another entity handle type which can be converted from and to this one.
-    /// A void-pointer is wrapped as the handle type, since the underlying entity metadata type is not known without component types.
-    class Entity {
-      // All other Scattered classes are friends, so they can access the void-pointer for casting.
-      template<ScatteredOptions, typename...>
-      friend class Scattered;
-    private:
-      /// The void-pointer type for this storage.
-      ///
-      /// If smart pointers are used, uses a shared pointer, otherwise a regular pointer.
-      using VoidPointer = typename std::conditional<options.smart_pointers, std::shared_ptr<void>, void*>::type;
-      VoidPointer _pointer;
-    public:
-      /// Default constructor.
-      Entity() = default;
 
-      /// Constructor for converting from plain void-pointers.
-      Entity(VoidPointer pointer) : _pointer(pointer) {}
-
-      /// Equality operator.
-      bool operator==(const Entity& rhs) {
-        return rhs._pointer == _pointer;
-      }
-
-      /// Ineuality operator.
-      bool operator!=(const Entity& rhs) {
-        return rhs._pointer != _pointer;
-      }
-    };
+    using Entity = EntityReference<options.smart_pointers>;
 
     /// Executes a callable on each entity with all required components attached.
     ///
@@ -434,4 +442,13 @@ using ScatteredCustom = internal::ScatteredCustom<>;
 template<typename... TComponents>
 using Scattered = internal::Scattered<internal::scattered_options, TComponents...>;
 
+}
+
+namespace std {
+  template <bool smart_pointers>
+  struct hash<typename scanta::storage::internal::EntityReference<smart_pointers>> {
+    size_t operator()(const scanta::storage::internal::EntityReference<smart_pointers>& entity) const noexcept {
+      return std::hash<const void*>{}(entity._pointer);
+    }
+  };
 }
