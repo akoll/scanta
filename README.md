@@ -3,7 +3,7 @@
 
 ## Design philosophy
 `scanta` (/ˈsen(t)ə/) is an Entity-Component-System (ECS) library catered towards game developers.  
-It is designed to be highly customizable without sacrificing perfomance. Customization is done through selection _design options_ for certain _design choices_.  
+It is designed to be highly customizable without sacrificing perfomance. Customization is done through selection of _design options_ for certain _design choices_.  
 To achieve this, a scaffold implementation is employed with slots for multiple design choices. The scaffold contains any functionality that is universal to all design options.  
 The capability of using different design options shall have the least possible impact on the application's visible behavior, compared to a library with a pre-selected design option for each design choice.  
 Because of this, the design option slots are implemented as template parameters which then allow plugging in different option implementations of some design choice. Because templates are resolved at compile-time, this avoids the performance-loss incurred by using vtable-based polymorphism.  
@@ -12,6 +12,7 @@ Due to its heavy usage of templates and compile-time calculations (entity layout
 ## Documentation
 Source code documentation is done within the source files using a [Doxygen](https://www.doxygen.nl/) format. Run `doxygen` in the repository root to generate documentation pages inside the `doc` directory.  
 More implementation details are also commented within the source code that are not included in the Doxygen pages.
+
 ## Dependencies
 
 For compiling library headers:
@@ -34,7 +35,7 @@ For running benchmarks:
 * [LaTeX](https://www.latex-project.org/) (tested on texlive 2020.54586-5)
 
 ## Getting started
-To get started, include the necessary library headers and set up configuration. A `ecs.hpp` convenience header is provided to include all options.
+To get started, include the necessary library headers and set up configuration. An `ecs.hpp` convenience header is provided to include all options.
 ```cpp
 #include <scanta/ecs.hpp>
 
@@ -50,7 +51,7 @@ The two template parameters passed into the `EntityComponentSystem` are the _sto
   * `TupleOfVectors`. This storage stores component data of the same type contiguously and adjacently.
   * `VectorOfTuples`. This storage stores component data attached to the same entity contiguously and adjacently.
   * `Scattered`. This storage stores entity and component data in dynamically allocated and fragmented heap locations. This storage option is further configurable.
-* The _scheduler_ mandates how systems are scheduled and executed at run-time.
+* The _scheduler_ mandates how systems are scheduled statically and executed at run-time.
   * `Sequential`. This scheduler executes every system one after the other in the order they are registered in the scene.
   * `Parallel`. This scheduler determines dependencies between systems at compile-time and infers an execution schedule where compatible systems are run concurrently.
 
@@ -64,7 +65,7 @@ We can now start to define component types and systems that shall later run with
 _Components_ are just regular `struct`s:
 ```cpp
 struct Position {
-  float[2] value;
+  float value[2];
 };
 
 struct Flammable {
@@ -119,7 +120,7 @@ private:
   int count = 0;
 };
 ```
-When system state is mutated in the execution function, it can not be marked `const` anymore. `const` systems are executed with `inner parallelism`, meaning that they are applied to all matching entities concurrently:
+When system state is mutated in the execution function, it cannot be marked `const` anymore. `const` systems are executed with `inner parallelism`, meaning that they are applied to all matching entities concurrently:
 ```cpp
 class FireFighter {
 public:
@@ -146,6 +147,7 @@ Not all system parameters are component types. Some special exceptions exist:
 * Systems can also depend on one another:
 ```cpp
 struct Alice {
+  int secret_number = 0;
   void operator()() const {
     if (secret_number)
       std::cout << "Message received." << std::endl;
@@ -153,7 +155,6 @@ struct Alice {
 };
 
 struct Bob {
-  int secret_number = 0;
   void operator()(Alice& alice) const {
     alice.secret_number = 5;
   }
@@ -183,7 +184,7 @@ auto corpse_remover(ECS::Entity entity, const Hitpoints& hp) const {
 
     // `get_entity_count` is processed immediately.
     if (manager.get_entity_count() > 100) {
-      // `remove_entity` will automatically be deferred.
+      // `remove_entity` will automatically be deferred to the end of the frame.
       if (hp.value <= 0) manager.remove_entity(entity);
     }
   };
@@ -206,7 +207,7 @@ class SeqSystem {
 
 ### Scene
 To start simulation, instantiate a _scene_ and register the scene's systems.
-The systems are to be passed in as rvalue-references, move your system if need be.
+The systems are to be passed in as rvalue-references, `std::move` your system if need be.
 ```cpp
 ECS::Scene scene(
   ParSystem{},
@@ -224,7 +225,7 @@ while (true)
 ```
 
 The execution of each system in the scene is done such that the observable behavior is the same as if they executed sequentially (as done in the `Sequential` scheduler). The `Parallel` scheduler will infer a schedule to allow this.  
-Keep in mind that this means that if results from another system are depended on in some system, the results present are those from the last frame:
+Keep in mind that this means that if results from another system (that is registered later) are depended on in some system, the results present are those from the last frame:
 ```cpp
 class SystemA {
 public:
