@@ -86,14 +86,10 @@ The _dependencies_ of a system are defined by its function parameters. All of th
 // Systems can be class instances:
 class RenderSystem {
 public:
-  RenderSystem(Context context) : context(context) {}
-
   void operator()(const Position& position, const Appearance& appearance) {
     // Draw the entity to the screen.
     Screen::draw_circle(position.value, appearance.radius, appearance.color);
   }
-private:
-  Context context;
 } render_system;
 
 // Systems can be lambdas:
@@ -120,7 +116,7 @@ private:
   int count = 0;
 };
 ```
-When system state is mutated in the execution function, it cannot be marked `const` anymore. `const` systems are executed with `inner parallelism`, meaning that they are applied to all matching entities concurrently:
+When system state is mutated in the execution function, it cannot be marked `const` anymore. `const` systems are executed with *inner parallelism*, meaning that they are applied to all matching entities concurrently:
 ```cpp
 class FireFighter {
 public:
