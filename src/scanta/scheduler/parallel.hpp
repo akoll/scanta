@@ -64,7 +64,7 @@ public:
 
     // Iterate each system, and for each system all the systems after it by counting up from the current index to
     // the amount of systems specified exclusively (e.g. with 4 systems, 0: 1-2-3; 1: 2-3; 2: 3).
-    // For each system pair (i.e., (0,1), (0,2), (0,3), (1,2), (1,3), (2,3)) determine whether a dependecy
+    // For each system pair (i.e., (0,1), (0,2), (0,3), (1,2), (1,3), (2,3)) determine whether a dependency
     // exists between them, such that they may not run concurrently.
     // This is the case when either at least one of the systems writes to component data that the other also accesses
     // or when one system explicitly depends on the other by a system parameter.
